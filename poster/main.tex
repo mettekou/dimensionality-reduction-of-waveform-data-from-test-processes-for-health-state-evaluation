@@ -1,0 +1,182 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+
+% use metropolis 
+\usetheme[progressbar=none, numbering = none]{metropolis}
+\definecolor{myblue}{RGB}{33,84,157}
+% Set title color
+\setbeamercolor{frametitle}{bg=myblue,fg=white}
+% IMPORTANT: set subtitle color
+\setbeamercolor{framesubtitle}{fg=myblue, bg=normal text.bg}
+\setbeamerfont{frametitle}{size=\normalsize,series=\normalfont}
+\setbeamerfont{block title alerted}{size=\small}
+\setbeamerfont{block body alerted}{size=\scriptsize}
+
+\setbeamercolor{block title alerted}{bg=myblue!70,fg=white}
+\setbeamercolor{block body alerted}{bg=myblue!10,fg=black}
+%\setbeamercolor{background canvas}{bg=white}
+
+\setbeamertemplate{blocks}[rounded][shadow=false]
+
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}% To get more advances positioning options
+\usetikzlibrary{arrows}% To get more arrow heads
+\newcommand{\blank}[1]{\hspace*{#1}}
+
+
+
+
+% inspiration for colors
+\definecolor{ForestGreen}{RGB}{60, 140, 60}
+\definecolor{dgreen}{rgb}{0.,0.6,0.}
+\definecolor{orangered}{HTML}{FF4500}
+\definecolor{tan1}{HTML}{FFA54F}
+\definecolor{roze}{HTML}{FF3399}
+% base colors metropolis
+\definecolor{mDarkBrown}{HTML}{604c38} 
+\definecolor{mDarkTeal}{HTML}{23373b} 
+\definecolor{mLightBrown}{HTML}{EB811B} 
+\definecolor{mLightGreen}{HTML}{14B03D}
+
+\definecolor{paars}{HTML}{5d5dd5}
+\definecolor{myOrange}{rgb}{1,0.5,0}
+\definecolor{UGentblauw}{RGB}{30,100,200}
+
+
+
+
+
+\newcommand\myTikZfigure{%
+  \begin{tikzpicture}[>=stealth,semithick,scale=0.75]
+\node[scale=0.3] (A)  at (-6,5.725)  {\includegraphics{icon_UGent_WE_EN_RGB_color.eps}
+};  
+
+\node[scale=0.5] (B)  at (0,6)  {};  
+\node[scale=0.5] (C)  at (3,4)  {};  
+\node[scale=0.225] (D)  at (-4,5.8)  {\includegraphics{logo_UGent_EN.eps}
+};  
+
+  \end{tikzpicture}%
+}
+
+
+\begin{document}
+
+\setbeamertemplate{frametitle}[default][left]
+\begin{frame}[t,fragile]
+  \frametitle{\textbf{Statistical Inference of Deviations from Test Process Data} \newline \blank{0.5cm} \footnotesize{Prof. dr. ir. Sofie Van Hoecke} $\hspace{0.33em}$ \footnotesize{Prof. dr. Bram Vervisch} $\hspace{0.33em}$ \small{David Vander Mijnsbrugge}  $\hspace{0.33em}$ \footnotesize{Dylan Meysmans} \vspace{-0.2cm} }
+
+  \vspace{-1cm}
+
+  \begin{columns}[T]
+
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        % small is default for title scriptsize
+        \setbeamerfont{block title alerted}{size=\footnotesize}
+        \setbeamerfont{block body alerted}{size=\tiny}
+        \metroset{block=fill}
+        \begin{alertblock}{\centering Introduction}
+          During test processes for mechatronic devices, soft real-time systems and field-programmable gate arrays
+          (FPGAs) sample tens of sensors mounted on a device under test (DUT) and test bench at rates exceeding
+          1 kHz. The resulting waveforms consist of hundreds of thousands of samples each. In a development environment, product engineers find features of the waveforms which are the result of the DUT’s behaviour deviating from the norm. Software engineers then adapt the product engineers’ work for use in a production environment.
+          The goal here is no longer to develop an understanding of the product’s behaviour, but to detect deviations in the DUT’s behaviour immediately after the test process.\newline
+          \vspace{-0.1cm}
+
+          The analysis is rigid: the features of interest to product engineers during development are the ones which are evaluated in production. Due to the small amount of devices for which the waveforms are
+          analyzed during development, it is also biased. When defects are
+          detected in production, product and process engineers have to revise the analysis and software engineers
+          have to adapt their software. Production then has to be stopped to implement the adapted software.
+          \vspace{0.1cm}
+        \end{alertblock}
+      \end{center}
+    \end{column}
+
+    \vspace{-1cm}
+
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \setbeamerfont{block title alerted}{size=\footnotesize}
+        \setbeamerfont{block body alerted}{size=\tiny}
+        \metroset{block=fill}
+        \begin{alertblock}{\centering Research question}
+          \setlength{\leftmargini}{1.5em}
+          Given the waveforms characterizing a development test process for a few DUTs, can a statistical
+          model find features of interest or, equivalently, eliminate features not of interest?
+        \end{alertblock}
+      \end{center}
+      \vspace{-1.2cm}
+      \begin{center}
+        \setbeamerfont{block title alerted}{size=\footnotesize}
+        \setbeamerfont{block body alerted}{size=\tiny}
+        \metroset{block=fill}
+        \begin{alertblock}{\centering Objectives}
+          \setlength{\leftmargini}{1.5em}
+          \begin{itemize}
+            \item Compare various data reduction techniques for waveforms as preprocessing for a regression model
+            \item Compare regression model using data reduction on waveforms to regression model using features extracted by domain experts
+          \end{itemize}
+        \end{alertblock}
+      \end{center}
+      \vspace{-0.58cm}
+      \begin{center}
+        \setbeamerfont{block title alerted}{size=\footnotesize}
+        \setbeamerfont{block body alerted}{size=\tiny}
+        \metroset{block=fill}
+        \begin{alertblock}{\centering Methods}
+          The \textcolor{myOrange}{matrix profile} [1] is a data structure which captures discords and motifs in time series data. By itself it is not a data reduction method, but its output can be projected onto a lower-dimensional space.
+        \end{alertblock}
+      \end{center}
+    \end{column}
+
+  \end{columns}
+
+  \vspace{-1cm}
+
+  \begin{columns}[T]
+
+    \begin{column}{0.7\textwidth}
+      \begin{center}
+        \setbeamerfont{block title alerted}{size=\tiny}
+        \setbeamerfont{block body alerted}{size=\TINY}
+        \metroset{block=fill}
+        \begin{alertblock}{References}
+          [1] Yeh, C. C. M., Zhu, Y., Ulanova, L., Begum, N., Ding, Y., Dau, H. A., \ldots \& Keogh, E. (2016, December). Matrix profile I: all pairs similarity joins for time series: a unifying view that includes motifs, discords and shapelets. In 2016 IEEE 16th international conference on data mining (ICDM) (pp. 1317-1322). Ieee. \newline
+        \end{alertblock}
+      \end{center}
+    \end{column}
+
+    \begin{column}{0.3\textwidth}
+      \begin{center}
+        \setbeamercolor{block title alerted}{bg=myblue!95,fg=white}
+        \setbeamercolor{block body alerted}{bg=myblue!10,fg=myOrange!90}
+        \setbeamerfont{block title alerted}{size=\tiny}
+        \setbeamerfont{block body alerted}{size=\tiny}
+        \metroset{block=fill}
+        \begin{alertblock}{Contact}
+          Dylan.Meysmans@UGent.be
+        \end{alertblock}
+      \end{center}
+    \end{column}
+
+  \end{columns}
+
+
+
+
+  \begin{tikzpicture}[overlay, remember picture]
+    \node [xshift=0.75cm,yshift=-0.3cm] at (current page.south east)
+    {\scalebox{1}{\myTikZfigure}};
+  \end{tikzpicture}
+
+\end{frame}
+
+
+
+
+
+
+
+
+\end{document}
