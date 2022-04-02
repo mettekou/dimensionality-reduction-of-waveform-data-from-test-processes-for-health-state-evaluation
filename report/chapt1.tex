@@ -1,0 +1,83 @@
+\chapter{Introduction}
+
+As we focus on statistical data analysis in this thesis, it is opportune to first introduce the data at hand.
+The data which we model here originates from the Belgian branch of Transmisiones y Equipos Mecánicos (TREMEC).
+TREMEC is an automotive supplier company which develops, produces, and tests automotive power transmission systems such as \acrlongpl{dct} (\acrshortpl{dct}) for performance vehicles.
+In addition, it does so for most components of its \acrshortpl{dct}, such as clutches and hydraulic subsystems.
+The test processes for the simplest components of these hydraulic subsystems, namely proportional valves, produce the data which we analyze in this thesis.
+
+% Consider renaming solenoid valve to proportional valve
+% Add figure of proportional valve
+Let us now turn our attention to the subject of the test process data.
+Proportional valves are electromechanical fluid pressure regulation devices common in hydraulic systems \citep{DBLP:journals/tii/MazaevCH21}.
+As their name implies, they consist of two components\thinspace: a solenoid and a valve body.
+Although various types of solenoid valves exist, they all operate similarly: we send an electrical current through their coil and the resulting magnetic field attracts a plunger.
+The plunger movement can be linear to proportionally regulate fluid pressure or sudden to either allow maximum fluid pressure or none whatsoever.
+In this dissertation we only concern ourselves with proportional valves with a maximum pressure of 35 bar.
+This decision is not due to our methods not being generally applicable, but rather due to the data set we have available.
+
+% See Automotive Power Transmission Systems
+%Simple mechatronic devices such as solenoid valves do not stand alone, but serve as the components of more complex mechatronic devices.
+
+The hydraulic systems which incorporate the proportional valves are even more diverse than the valves themselves.
+This should come as no surprise, as pressure regulation is arguably the main method of control in such systems.
+
+It is also necessary to describe the test processes for proportional valves here.
+During test processes for mechatronic devices, soft real-time systems and field-programmable gate arrays (FPGAs) sample tens of sensors mounted on a \acrlong{dut} (\acrshort{dut}) and test bench at rates exceeding 1 kHz.
+Given that these test processes last several minutes for all but the simplest of mechatronic devices, the resulting waveforms consist of hundreds of thousands of samples each.
+Because they precisely capture the \acrshort{dut}’s response to the test process, along with any edge conditions stemming from the test bench, the waveforms are stored for analysis at the end of the test process, together with categorical data, such as which components were used during the assembly of the DUT.\@
+
+The goal of this analysis depends on the environment in which it takes place.
+In a development environment, the DUTs are iterative improvements over an initial product design.
+Product engineers either inspect the waveforms from these test processes visually or they write software to analyze them via numerical mathematics. They find features of the waveforms which are the result of the DUT’s behaviour deviating fromthe norm. Software engineers then adapt the product engineers’ work for use in a production environment.
+The goal here is no longer to develop an understanding of the product’s behaviour, but to detect deviationsin the DUT’s behaviour immediately after the test process.
+
+Time series data is  obtained from panels, econometrics, longitudinal studies\ldots for tradtional statistical processing.
+The same mathematical object
+As such, methods from signal processing and statistical methods for time series sometimes share a purpose.
+As an example, the Savitzky-Golay filter \citep{savitzky1964smoothing} corresponds to local polynomial regression \citep{cleveland1979robust}.
+Although test process data fits the panel model when we consider sensors to be individuals
+High frequency sampling also produces time series data, but fundamentally different? Since it comes from engineering, signal processing approaches are more common than traditional statistics.
+
+\section{Problem statement}
+
+A problem with the current approach is the workload for software engineers.
+
+Furthermore, More errors due to manual numerical mathematics/algorithms
+
+No standard procedure
+
+It is clear that the analysis is rigid: the features of interest to product engineers during development are the ones which are evaluated in production.
+Due to the small amount of devices for which the waveforms are analyzed during development, it is also biased.
+Some defects are rare enough to evade detection during development, but common enough to lead to considerable losses in production.
+When these defects are detected in production, product and process engineers have to revise the analysis and software engineershave to adapt their software.
+Production then has to be stopped to implement the adapted software.
+
+\section{Research objectives}
+
+For a more flexible and unbiased analysis, we propose the use of a statistical model, both in the development
+and production environment. It can take both the high-dimensional waveform test data and the categorical
+assembly data as inputs. The student can opt for a traditional statistical model or a machine learning model.
+Either way, he can subject it to several research questions of interest to us.
+
+\begin{itemize}
+      \item Compare various automatic data reduction methods for waveforms as
+            preprocessing for a regression model
+      \item Given the waveforms characterizing a development test process for a few DUTs, can a statistical
+            model find features of interest? Some input from product engineers, such as the features they deem
+            interesting, can be used as a stepping stone if necessary.
+      \item Compare regression model using data reduction on waveforms to
+            regression model using features extracted by domain experts
+      \item Given the waveforms characterizing a production test process for many DUTs, can a statistical model
+            find features of interest not yet found during development? Similarly, can it eliminate features found
+            in development no longer relevant during production?
+      \item Developing a standard procedure
+\end{itemize}
+
+\section{Outline}
+
+The roadmap through this dissertation
+
+The next chapter is on related work.
+
+Conclusions in the end
