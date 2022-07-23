@@ -1,7 +1,63 @@
 \chapter{Data preparation}
 
+In this chapter we provide an overview of how we prepare the proportional valve data for statistical modelling in the three following chapters.
+This data preparation process consists of three subprocesses: data ingestion, data cleaning, and data exploration.
+During data ingestion, we move data from flat files to a relational database.
+After data ingestion, we clean the data, so it is ready for the statistical modelling methods we apply to it in the following chapters.
+Finally, data exploration gives us the necessary insight to continue with statistical modelling.
+
 \section{Data ingestion}
+
+The automotive supplier company stores its valve test data on a file server which is equipped with mechanical hard drives.
+These have higher access times than solid state drives, especially when we access data in a random order, rather than sequentially.
+The file server operating system is Microsoft Windows Server 2016, which uses New Technology File System (NTFS) as its file system and Server Message Block (SMB)/Common Internet File System (CIFS) as its network file sharing protocol.
+The directory hierarchy on the file system in which we find the data is shallow, i.e. there are little directories and many files per directory.
+We claim the combination of mechanical hard drives, the use of NTFS and SMB/CIFS, and the shallow directory hierarchy combine to lead the file server to prohibitively slowly list the contents of directories.
+Because we require this feature in our work, its underperformance is an argument against the use of a file server.
+Since we are unable to find studies on the performance of NTFS and SMB/CIFS to confirm or deny this claim, we only draw from anecdotal evidence against the use of the file server.
+
+There are also arguments to be made against the file formats in which the valve test data is stored.
+A variation on the standard \acrlong{json}~(\acrshort{json})~\citep{DBLP:journals/rfc/rfc8259} is the file format for test report files, which contain metadata for the valve such as its type, the scalars extracted from the sensor waveforms by the evaluation software, and the valve's health state.
+It is a text-based file format, as listing~\ref{lst:test-report} depicts.
+The test report files link to their respective sensor waveform files by including their absolute path.
+
+The proprietary TDMS from National Instruments \citep{nitdms} is the binary file format for the sensor waveform files themselves.
+A TDMS file consists of segments which each optionally contain data and metadata.
+In our case, the data are the sensor waveforms and an example of metadata is the name of the sensor a waveform originates from.
+Since TDMS is a file format for streaming, we update metadata in a TDMS file by appending a new metadata segment to it.
+Along with duplicate values in sensor waveforms due to quantization and oversampling, updated metadata is a source of data redundancy in TDMS files.
+As the TDMS file format does not specify compression methods, this data redundancy leads to large file sizes.
+National Instruments partially mitigates this by allowing for separate TDMS index files which contain only metadata.
+Another problem with the TDMS file format is that an operating system cannot index it, as it is proprietary.
+We therefore cannot search the contents of TDMS files through an operating system's search facilities.
+
+\begin{listing}
+  \inputminted[firstline=101,lastline=124,breaklines=true]{json}{test_report.json}
+  \caption{An excerpt from a JSON test report file for a 35 bar proportional valve.}
+  \label{lst:test-report}
+\end{listing}
+
+To overcome these limitations, we set up a PostgreSQL 14 server on our own workstation.
+PostgreSQL is the only free and open-source \acrshort{rdbms} with a parametric array column type, transparent compression of large columns, and dynamic analysis of query plans and query resource consumption (\texttt{EXPLAIN ANALYZE}).
+Since the valve data is structured and we do not require a distributed system, we do not consider a non-relational database, such as the wide column store Apache Cassandra an option.
 
 \section{Data cleaning}
 
+We consider the data ingestion process we detail in the previous section separate from the data cleaning process we detail in this section.
+
 \section{Data exploration}
+
+Data exploration allows us to assess the feasibility of our endeavour.
+
+\subsection{Variables}
+
+\subsection{Sensor waveforms}
+
+\begin{figure}
+  \includegraphics[width=\textwidth]{waveform_passed_heatmap.png}
+  \includegraphics[width=\textwidth]{waveform_failed_heatmap.png}
+  \caption{Pressure curves for sample okay and not okay solenoids}
+  \label{fig:waveform-heatmaps}
+\end{figure}
+
+Figure~\ref{fig:waveform-heatmaps}

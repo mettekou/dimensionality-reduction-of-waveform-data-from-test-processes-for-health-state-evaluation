@@ -1,17 +1,133 @@
 \chapter{Related work}
 
-The work related to this dissertation spans four fields: time series data, digital signal processing, high-dimensional data, and machine learning.
+In this chapter we provide an overview of work in the fields we draw inspiration from for our own work.
+These fields are relational database management systems (\gls{rdbms}), digital signal processing, dimensionality reduction, and explainable machine learning.
 While there exists considerable overlap between the topics in these fields upon which this dissertation touches, we find the terminology does not always align.
 To be able to draw the necessary parallels, we do not structure this chapter through the four aforementioned fields, but through the issues we encounter further in this dissertation.
-These are dimensionality reduction
+These are dimensionality reduction, explainable machine learning
 
-\section{Spectral analysis}
+\section{\Acrlongpl{rdbms}}
 
-Spectral analysis
+If we do not store data, we cannot read it.
+Comma-separated value (CSV) files only go so far, vector-valued fields such as waveform samples would make them too wide.
+For optimizing search in CSV files, we depend on the operating system facilities/file system/...
+\Acrlong{rdbms} (RDBMS)
+
+\subsection{Keys}%
+
+A \textbf{superkey} consists of a subset of a table's columns' values that uniquely identifies the remaining columns' values, i.e. all columns' values not part of the superkey are \textbf{functionally dependent} on it.
+The term functionally dependent refers to the fact that we can construct a function which takes the superkey's columns' values as an argument and returns the remaining columns' values.
+When multiple superkeys exist for a table, the superkeys that span the least amount of columns are the \textbf{candidate keys} for said table.
+Candidate keys for a table may overlap in columns.
+As a convention carried over from navigational DBMSs, we choose a single candidate key as the \textbf{primary key} for a table.
+Other tables' rows reference rows in our table by including the columns its primary key spans.
+We then call these columns the \textbf{foreign key} referencing another table.
+
+When a superkey for a table arises from the domain of discourse, we refer to it as a \textbf{natural key}.
+Not all tables have columns that uniquely identify them, however.
+In addition, we want to update rows in a table without having to update the foreign keys for the tables that reference them, which means we cannot use natural keys as foreign keys.
+We therefore artificially introduce a superkey for a table, which we call a \textbf{surrogate key}.
+We note that the use of surrogate keys does not eliminate the need to identify natural keys and functional dependencies as a prerequisite for proper relational database design.
+
+\subsection{Normalization}%
+
+Codd conceived the relational model to allow the columns and rows of tables to evolve independently from the columns and rows of other tables~\citep{DBLP:journals/cacm/Codd70}.
+To correctly use the relational model, we therefore split data into multiple tables to reduce data redundancy, a process we refer to as \textbf{normalization}.
+Normalization is not just splitting data into tables haphazardly\thinspace: it is a formalized process akin to refactoring source code in a programming language.
+To guide us through this process, there exists a hierarchy of \textbf{normal forms} defined by several academics throughout the years~\citep{DBLP:journals/cacm/Kent83}.
+Each of these eliminates a type of data redundancy and the data integrity concerns such as insertion, update, and deletion anomalies that come with it.
+
+\begin{itemize}
+\item Tables in \textbf{first normal form} (\textbf{1NF}) have the same amount of columns in each of their rows. The astute reader of the second chapter of this document may note that this is always the case for relational data. Indeed, 1NF is a necessary and sufficient condition on data to enter the relational model. To achieve 1NF, we create tables for each different set of columns across rows of unnormalized data.
+\item Tables in \textbf{second normal form} (\textbf{2NF}) are in 1NF and only have non-key columns which are functionally dependent on all columns of a candidate key. If at least one of the non-key columns is functionally dependent on only part of the columns of a candidate key, a table does not satisfy 2NF. These columns' values are then duplicated and must be updated in multiple rows. An update or deletion anomaly occurs when we fail to update or delete all of these rows at once. To achieve 2NF, we split the table into a table per part of the candidate key and include its functionally dependent columns in said table.
+\item Tables in \textbf{third normal form} (\textbf{3NF}) are in 2NF and do not have non-key columns which are functionally dependent on other non-key columns. The update and deletion anomalies for data not in 3NF occur when we fail to update the functionally dependent non-key columns in all rows. They are therefore similar to the update anomalies we encounter for data not in 2NF. When we encounter non-key columns which identify other non-key columns, we split these off into their own tables to achieve 3NF.
+\item Tables in 3NF are always in \textbf{Boyce--Codd normal form} (\textbf{BCNF})~\citep{DBLP:conf/sigmod/Heath71}, unless they have multiple overlapping candidate keys. In that case, to be in BCNF, a table's functional dependencies must come from superkeys only, i.e. non-key columns cannot be the domain of a functional dependency. BCNF eliminates all data redundancy arising from functional dependencies.
+\item Tables in \textbf{fourth normal form} (\textbf{4NF}) are in BCNF and do not express more than 1 many-to-many or one-to-many relationship, which are both special cases of \textbf{multivalued dependencies}. When they do, there are multiple ways of distributing the columns's values for those relationships across rows, which lead to insertion, update, and deletion anomalies.
+\item Tables in \textbf{fifth normal form} (\textbf{5NF}) are in 4NF and cannot be reconstructed by joining several tables together. Formally, we say every non-trivial \textbf{join dependency} for tables in 5NF is implied by their candidate keys. A table \(T\) has a join dependency on a set of tables \(T_i\) when \(T = \Bowtie_{i=1}^{n} T_i\). We call a join dependency trivial when that set of tables is just \(\{ T \}\). The multivalued dependencies 4NF restricts are binary join dependencies.
+\item Like 4NF and 5NF, \textbf{domain-key normal form} (\textbf{DK/NF})~\citep{DBLP:journals/tods/Fagin81} is not defined in terms of functional dependencies. Tables are in DK/NF when all their constraints are the logical consequence of their keys and their columns' domains. A typical violation of DK/NF is the use of a foreign key which may reference multiple tables depending on another column's value. The data integrity of tables in DK/NF can be preserved by any RDBMS which supports foreign keys\thinspace: DK/NF is the lowest normal form which eliminates all data redundancy and associated insertion, update, and deletion anomalies.
+\item Tables in \textbf{sixth normal form} (\textbf{6NF}) consist of a single candidate key and only one non-key column. In other words, the only join dependency these tables have is the trivial one. The advantage of 6NF over DK/NF is apparent for multidimensional data: it makes it possible to add columns as new tables, without modifying existing tables. In effect, it emulates part of a wide column store with a relational database. Tables in 6NF also trivially satisfy 5NF, but not necessarily DK/NF.
+\end{itemize}
+
+\subsection{Indices}%
+
+Indices containing keys derived from the values for a subset of the columns of a table are used by RDBMSs when locating rows.
+In \acrshort{rdbms}, indices are an implementation detail\thinspace: applications do not depend on them to yield correct results.
+\Acrshort{rdbms} can of course also locate rows without using an index by sequentially scanning tables.
+Because this requires them to read the entire table from secondary storage, either as a whole or in pages, it is not the most performant approach.
+We say a sequential table scan has a time complexity of \(O(n)\), where \(n\) is the amount of rows in the table.
+It is not just the worst case analysis for a sequential scan that leads us to \(O(n)\), it is also the best and average case, as the RDBMS always reads every row from secondary storage to see whether it is one of the rows it is trying to locate.
+
+RDBMSs use indices to do better than \(O(n)\) sequential table scans for locating rows.
+How much better they do is determined by the data structure they use to implement their index, but each data structure comes with its own tradeoff between flexibility and performance.
+Some data structures only support equality, whereas others support a partial order on keys as well.
+In addition, if not all columns we request are \textbf{covered} by the index, the RDBMS will retrieve the locations of the rows from the index and read the columns' values for those rows from the table.
+If the index covers all columns we request, the RDBMS directly retrieves all columns' values from the index, further improving performance.
+Finally, indices also come with a performance penalty for inserting and deleting rows, as the RDBMS needs to insert or delete into both the index and the table.
+
+The simplest data structure to back an index by is a \textbf{hash table}~\cite{DBLP:books/daglib/0023376}.
+We call an index backed by a hash table a \textbf{hash index}.
+A hash table is a generalized array\thinspace: rather than allowing a user to access elements directly by their index, it transforms a key into an index for a backing array by means of a \textbf{hash function}.
+Such a hash function is a lossy conversion of a key of arbitrary type and size to an integer in constant time (\(O(1)\)).
+Because a hash function is not injective, collisions are possible.
+A good hash function minimizes the probability of these by approximating a uniform distribution of keys over integers, but designing such a hash function is a separate science entirely \cite{DBLP:books/daglib/0023376}.
+
+To store a key-value pair in a hash table, we hash the key to get a position in the backing array to store the value.
+We note that in the worst case, we need to resize the backing array to be able to store a value, which means copying all previously inserted values for a time complexity of \(O(n)\).
+To retrieve a value from a hash table, we hash the key and use the index to retrieve the value associated with it from the backing array.
+We resolve collisions by applying a collision resolution algorithm such as separate chaining or open addressing \cite{DBLP:books/daglib/0023376}, both with a worst case time complexity of \(O(n)\).
+An average case analysis for the insertion and retrieval operations leads to an \textbf{amortized} \(O(1)\) time complexity for both, as growing the backing array and resolving collisions are the exception, not the rule.
+
+As the values in a hash table are not ordered by key, a hash index can only locate rows by equality of the hashed columns.
+An alternative data structure to a hash table that supports ordering values by key is a \textbf{search tree}~\cite{DBLP:books/daglib/0023376}.
+A search tree is a tree in which each node's left subtree contains only keys less than the key of that node and each node's right subtree only contains keys greater than the key of that node.
+Thanks to this ordering, search trees allow insertion and retrieval of values in logarithmic time (\(O(\log n)\)), but this requires them to be \textbf{balanced}: the size of the subtree to the left and right of every node needs to remain approximately equal to guarantee this time complexity\footnote{As an example, if we inserted elements in order into an empty search tree without balancing it along the way, it would degrade into a singly linked list and insertions and retrievals in \(O(n)\).}.
+Several algorithms exist for balancing \textbf{binary search trees}~\cite{DBLP:books/daglib/0023376}, leading to \textbf{Adelson-Velsky and Landis trees}~\cite{DBLP:books/daglib/0029345} and \textbf{red-black trees}~\cite{DBLP:books/daglib/0023376}, among other variations.
+These binary search trees derive their name from their \textbf{branching factor} of 2 and are the most popular search tree for ordering data in primary storage.
+The branching factor for a search tree is the maximum number of nodes below any other node.
+
+The base of the logarithm for the running time of the operations on search trees is irrelevant in algorithmic complexity theory\footnote{Changing a logarithm to another base is a division by a constant, which is asymptotically irrelevant.}, but in this case it corresponds to the branching factor of the search tree.
+Because RDBMSs persist indices to secondary storage to load them into primary storage later, the branching factor of a binary search tree is too low.
+A low branching factor leads to loading more nodes from secondary storage to retrieve a value and more balancing operations.
+As secondary storage is an order of magnitude slower than primary storage, this impacts performance.
+A \textbf{B-tree}~\cite{DBLP:journals/acta/BayerM72}\footnote{The inventors of the B-tree never said what the B stands for~\cite{DBLP:journals/csur/Comer79}. Some candidates are Bayer, Boeing, balanced, bushy, and broad.} is a generalization of a red-black tree to any branching factor suitable for secondary storage.
+The \textbf{B\textsuperscript{+}-tree} variation only stores keys in intermediate nodes and is the one implemented as the default index by most RDBMSs.
 
 \section{Dimensionality reduction}
 
+In our work, we encounter waveform data from sensors sampled at a sample rate of 1 kHz for 30 seconds.
+While it is possible to directly use these 30,000 samples of each waveform as the independent variables in our regression model, as we have more proportional valves than waveform samples, it is not ideal, because the data points become sparse and the computation time high in such a high-dimensional space.
+Dimensionality reduction is therefore an important part of our work and we treat it here.
+
+An approach to dimensionality reduction which has been known for over a century is \acrlong{pca}~(\acrshort{pca}) \citep{doi:10.1080/14786440109462720,hotelling1933analysis}.
+The aim of \acrshort{pca} is to find new uncorrelated variables, called principal components (PC), which successively maximize variance, that is: the first PC contributes most to the total variance, the second PC contributes the second most to the total variance, and so on \citep{doi:10.1098/rsta.2015.0202}.
+To find these principal components, we solve an eigendecomposition problem for a square covariance matrix or singular value decomposition (SVD) problem for a non-square covariance matrix.
+\Acrlong{pca}~(\acrshort{pca}) validity assumptions: linearity, high variance means high importance, and orthogonality of principal components. Are these valid for time series data? What about sensor data (high sample rate)?
+PCA compression assumption: correlation between input vectors is high?
+
+Linear discriminant analysis (LDA) \citep{hastie2009elements,mardia1979multivariate} is both an approach to dimensionality reduction and a classification technique for a Gaussian mixture model.
+
+\subsection{Spectral analysis}
+
+Spectral analysis
+
+While it makes sense to apply PCA to the concatenation of multiple time series, it does not make sense to apply a spectral decomposition such as a (short time/sliding window) Fourier transform or wavelet transform to it.
+PCA
+\citep{DBLP:journals/pvldb/DingTSWK08}
+
+\section{Explainable machine learning}
+
+Dimensionality reduction through PCA or LDA is hard to interpret when the number of dimensions is high.
 
 \section{Interpretability of machine learning}
 
 Time series shapelets  \citep{DBLP:conf/kdd/YeK09}
+
+Learning shapelets \citep{DBLP:conf/kdd/GrabockaSWS14}
+
+\section{Software}
+
+PostgreSQL \citep{postgresql}
+
+Scikit-learn \citep{DBLP:journals/jmlr/PedregosaVGMTGBPWDVPCBPD11}
+
+Tslearn \citep{DBLP:journals/jmlr/TavenardFVDAHPY20}

@@ -7,10 +7,11 @@
 \usepackage{fontspec}
 
 \setmainfont{UGent Panno Text}
+\setmonofont[Scale=MatchLowercase]{PragmataPro Mono Liga}
 
 \usepackage[hidelinks]{hyperref}
 \hypersetup{
-    pdftitle={Statistical Inference of Deviations from Test Process Data},
+    pdftitle={Dimensionality Reduction of Waveform Data from Test Processes for Health State Evaluation},
 	pdfauthor={Dylan Meysmans},
     pdfpagemode=UseOutlines,
     }
@@ -19,8 +20,17 @@
 
 \usepackage[acronym]{glossaries}
 
+\setacronymstyle{long-short}
 \newacronym{dct}{DCT}{dual-clutch transmission}
 \newacronym{dut}{DUT}{device under test}
+\newacronym{svd}{SVD}{singular value decomposition}
+\newacronym{pca}{PCA}{principal components analysis}
+\newacronym[shortplural={RDBMS}]{rdbms}{RDBMS}{relational database management system}
+\newacronym{aic}{AIC}{Akaike information criterion}
+\newacronym{vif}{VIF}{variance inflation factor}
+\newacronym{json}{JSON}{JavaScript object notation}
+\newacronym{roc}{ROC}{receiver operating characteristic}
+\newacronym{lasso}{LASSO}{least absolute shrinkage and selection operator}
 
 \makeglossaries%
 
@@ -31,7 +41,7 @@
 % if it is required to add, please uncomment the line starting with
 % \copromotor below and fill in the correct details.
 %
-\title{Statistical Inference of Deviations from Test Process Data}
+\title{Dimensionality Reduction of Waveform Data from Test Processes for Health State Evaluation}
 %\subtitle{Discovering the subtitle}
 \author{Dylan Meysmans}
 
@@ -54,8 +64,9 @@
 % To set the parameters like language or layout, look at the help for the
 % listings package and adapt the file listingfile.tex accordingly.
 % 
-\usepackage{listings}
-\input{listingfile} % contains settings for the package listings
+%\usepackage{listings}
+%\input{listingfile} % contains settings for the package listings
+\usepackage{minted}
 % this package provides an environment for algorithms (cfr. Pseudocode)
 \usepackage[ruled]{algorithm2e} 
 % This package provides extra possibilities for tables
@@ -68,6 +79,7 @@
 % ---- ADDITIONAL SETTINGS
 \graphicspath{{Fig/}} % path to the figure directory
 
+\DeclareMathOperator*{\Bowtie}{\bowtie}%
 
 %-------------------------------------------------------------------------------
 % The actual document
@@ -110,6 +122,9 @@
 \include{chapt2}
 \include{chapt3}
 \include{chapt4}
+\include{chapt5}
+\include{chapt6}
+\include{chapt7}
 
 % ------------ REFERENCES ------------
 % Here you have your bibliography created

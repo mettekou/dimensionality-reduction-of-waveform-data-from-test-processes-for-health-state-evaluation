@@ -1,17 +1,16 @@
 \chapter{Introduction}
 
-As we focus on statistical data analysis in this thesis, it is opportune to first introduce the data at hand.
-The data which we model here originates from the Belgian branch of Transmisiones y Equipos Mecánicos (TREMEC).
-TREMEC is an automotive supplier company which develops, produces, and tests automotive power transmission systems such as \acrlongpl{dct} (\acrshortpl{dct}) for performance vehicles.
+Because we statistically analyze data in this thesis, it is opportune to first introduce the data at hand.
+It originates from an automotive supplier company which develops, produces, and tests automotive power transmission systems such as \acrlongpl{dct} (\acrshortpl{dct}) for performance vehicles.
 In addition, it does so for most components of its \acrshortpl{dct}, such as clutches and hydraulic subsystems.
-The test processes for the simplest components of these hydraulic subsystems, namely proportional valves, produce the data which we analyze in this thesis.
+The test processes for some of the simplest components of these hydraulic subsystems, namely proportional valves, produce the data which we analyze in this thesis.
+As the company produces these proportional valves in high quantities, the decision to analyze their data makes sense from both the statistical and the engineering perspective.
 
-% Consider renaming solenoid valve to proportional valve
 % Add figure of proportional valve
 Let us now turn our attention to the subject of the test process data.
 Proportional valves are electromechanical fluid pressure regulation devices common in hydraulic systems \citep{DBLP:journals/tii/MazaevCH21}.
-As their name implies, they consist of two components\thinspace: a solenoid and a valve body.
-Although various types of solenoid valves exist, they all operate similarly: we send an electrical current through their coil and the resulting magnetic field attracts a plunger.
+The proportional valves we consider here contain a solenoid, which is an electromagnet formed by a coil.
+To regulate pressure in the proportional valve, we send an electrical current through this coil and the resulting magnetic field attracts a plunger.
 The plunger movement can be linear to proportionally regulate fluid pressure or sudden to either allow maximum fluid pressure or none whatsoever.
 In this dissertation we only concern ourselves with proportional valves with a maximum pressure of 35 bar.
 This decision is not due to our methods not being generally applicable, but rather due to the data set we have available.
@@ -30,7 +29,7 @@ Because they precisely capture the \acrshort{dut}’s response to the test proce
 The goal of this analysis depends on the environment in which it takes place.
 In a development environment, the DUTs are iterative improvements over an initial product design.
 Product engineers either inspect the waveforms from these test processes visually or they write software to analyze them via numerical mathematics. They find features of the waveforms which are the result of the DUT’s behaviour deviating fromthe norm. Software engineers then adapt the product engineers’ work for use in a production environment.
-The goal here is no longer to develop an understanding of the product’s behaviour, but to detect deviationsin the DUT’s behaviour immediately after the test process.
+The goal here is no longer to develop an understanding of the product’s behaviour, but to detect deviations in the DUT’s behaviour immediately after the test process.
 
 Time series data is  obtained from panels, econometrics, longitudinal studies\ldots for tradtional statistical processing.
 The same mathematical object
@@ -76,8 +75,4 @@ Either way, he can subject it to several research questions of interest to us.
 
 \section{Outline}
 
-The roadmap through this dissertation
-
 The next chapter is on related work.
-
-Conclusions in the end

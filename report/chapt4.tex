@@ -1,1 +1,68 @@
-\chapter{Data analysis}
+\chapter{Logistic regression}
+
+In this chapter we build and evaluate two logistic regression models using the variables selected by the automotive supplier company's engineers.
+We build the first model by forward selection of variables and the second by shrinking and elminating coefficients from the full model through elastic net regulariation.
+The model which best predicts proportional valve health state serves as the benchmark to which we compare the models from subsequent chapters.
+
+\section{Preliminaries}
+
+e randomly partition the valve data sample in the same training set containing 80 percent of the data and test set containing the remaining 20 percent.
+Since the sample contains data for over 30,000, the
+
+\section{Forward selection of variables}
+
+Because the amount of possible logistic regression models in $n$ candidate variables is $2^n$, an exhaustive search procedure is prohibitively expensive.
+There are search procedures which are not exhaustive, but still yield serviceable models in practice.
+Forward selection of variables is a greedy model building algorithm.
+As such, the decision to include each variable is optimal at the step it is taken.
+It starts from the empty model
+
+Forward selection of variables is not without its criticism \citep{doi:10.1080/00401706.1970.10488701,doi:10.1080/00031305.1990.10475722}, which we address here.
+
+We take into account both the \acrlong{aic} (\acrshort{aic}) \citep{Akaike1998} and the \acrlong{vif} (\acrshort{vif}) during forward selection.
+We do not take into account $R^{2}$, since it
+
+\subsection{Outliers and influential values}
+
+\subsection{Multicollinearity}
+
+\begin{figure}
+  \includegraphics[width=\textwidth]{correlation_matrix.png}
+  \caption{The correlation matrix hints at multicollinearity between some current and pressure curve points.}
+  \label{fig:correlation-matrix}
+\end{figure}
+
+\subsection{Prediction}
+
+\begin{figure}
+  \includegraphics[width=\textwidth]{roc_forward.png}
+  \caption{The \acrshort{roc} curve for the stepwise logistic regression model with forward selection.}
+  \label{fig:roc-forward}
+\end{figure}
+
+\section{Elastic net regularization}
+
+We need not resort to manual variable selection if we do not required closed form solutions to regression equations to simplify statistical inference.
+The evidence for multicollinearity between some variables leads us to prefer an elastic net regularization over a \acrlong{lasso}~(\acrshort{lasso}) regularization to automate variable sleection.
+
+Training time considerably higher than forward selection.
+
+\subsection{Penalties}
+
+We choose the hyperparameter $\lambda$/$\alpha$ for the elastic net regularization by 5-fold cross-validation on the training set.
+L1 and L2 norm penalty split 50/50.
+
+\subsection{Prediction}
+
+\begin{figure}
+  \includegraphics[width=\textwidth]{roc_lasso.png}
+  \caption{The \acrshort{roc} curve for the logistic regression model with variable selection through elastic net regularization.}
+  \label{fig:roc-forward}
+\end{figure}
+
+\section{Conclusion}
+
+Both models predict proportional valve health state well.
+However, is the complexity of additional variables in elastic net justified for AUC = 0.98 vs. AUC = 0.96 for a parsimonious hand-built model using forward selection?
+Given mass production of proportional valves, it is?
+Take into account training time.
