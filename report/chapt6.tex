@@ -1,10 +1,24 @@
 \chapter{Shapelet learning}
 
+\section{Preliminaries}
+
 \section{Prediction}
+
+As for the approaches from the previous two chapters, we evaluate how well the shapelet learning model predicts the health state of proportional valves by measuring the area under the \acrshort{roc} curve which figure~\ref{fig:roc-shapelet-learning} depicts.
 
 \begin{figure}
   \includegraphics[width=\textwidth]{roc_shapelet_learning.png}
+  \caption{The \acrshort{roc} curve for the shapelet learning model.}
   \label{fig:roc-shapelet-learning}
 \end{figure}
 
 \section{Conclusion}
+
+Shapelet learning leads to a model which predicts proportional valve health state well, although not as well as logistic regression on manually extracted variables.
+However, it does so by only considering the pressure sensor waveform, whereas the manually extracted variables come from the current, pressure, and temperature sensor waveforms.
+
+Both the implementation of shapelet learning in pyts and the implementation in tslearn are lacking.
+Although both implementations allow the user to split data in batches, they do not allow the user to stream the data from a database or file system, thereby defeating the purpose of batching.
+Furthermore, the implementation in pyts does not allow parallel processing.
+Finally, the implementation in tslearn consumes exorbitant amounts of memory for shapelets of non-trivial length.
+We conclude that both implementations need to further mature to see use in production applications.
