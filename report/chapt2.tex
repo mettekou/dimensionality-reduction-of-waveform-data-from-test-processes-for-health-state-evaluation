@@ -6,7 +6,7 @@ While there exists considerable overlap between the topics in these fields upon 
 To be able to draw the necessary parallels, we do not structure this chapter through the four aforementioned fields, but through the issues we encounter further in this dissertation.
 These are dimensionality reduction, explainable machine learning
 
-\section{\Acrlongpl{rdbms}}
+\section{Relational database management systems}
 
 If we do not store data, we cannot read it.
 Comma-separated value (CSV) files only go so far, vector-valued fields such as waveform samples would make them too wide.
@@ -50,18 +50,18 @@ Each of these eliminates a type of data redundancy and the data integrity concer
 
 \subsection{Indices}%
 
-Indices containing keys derived from the values for a subset of the columns of a table are used by RDBMSs when locating rows.
+Indices containing keys derived from the values for a subset of the columns of a table are used by \acrshortpl{rdbms} when locating rows.
 In \acrshort{rdbms}, indices are an implementation detail\thinspace: applications do not depend on them to yield correct results.
 \Acrshort{rdbms} can of course also locate rows without using an index by sequentially scanning tables.
 Because this requires them to read the entire table from secondary storage, either as a whole or in pages, it is not the most performant approach.
 We say a sequential table scan has a time complexity of \(O(n)\), where \(n\) is the amount of rows in the table.
 It is not just the worst case analysis for a sequential scan that leads us to \(O(n)\), it is also the best and average case, as the RDBMS always reads every row from secondary storage to see whether it is one of the rows it is trying to locate.
 
-RDBMSs use indices to do better than \(O(n)\) sequential table scans for locating rows.
+\Acrshortpl{rdbms} use indices to do better than \(O(n)\) sequential table scans for locating rows.
 How much better they do is determined by the data structure they use to implement their index, but each data structure comes with its own tradeoff between flexibility and performance.
 Some data structures only support equality, whereas others support a partial order on keys as well.
 In addition, if not all columns we request are \textbf{covered} by the index, the RDBMS will retrieve the locations of the rows from the index and read the columns' values for those rows from the table.
-If the index covers all columns we request, the RDBMS directly retrieves all columns' values from the index, further improving performance.
+If the index covers all columns we request, the \acrshort{rdbms} directly retrieves all columns' values from the index, further improving performance.
 Finally, indices also come with a performance penalty for inserting and deleting rows, as the RDBMS needs to insert or delete into both the index and the table.
 
 The simplest data structure to back an index by is a \textbf{hash table}~\cite{DBLP:books/daglib/0023376}.
@@ -92,35 +92,54 @@ As secondary storage is an order of magnitude slower than primary storage, this 
 A \textbf{B-tree}~\cite{DBLP:journals/acta/BayerM72}\footnote{The inventors of the B-tree never said what the B stands for~\cite{DBLP:journals/csur/Comer79}. Some candidates are Bayer, Boeing, balanced, bushy, and broad.} is a generalization of a red-black tree to any branching factor suitable for secondary storage.
 The \textbf{B\textsuperscript{+}-tree} variation only stores keys in intermediate nodes and is the one implemented as the default index by most RDBMSs.
 
-\section{Dimensionality reduction}
+\section{Time series}
 
-In our work, we encounter waveform data from sensors sampled at a sample rate of 1 kHz for 30 seconds.
-While it is possible to directly use these 30,000 samples of each waveform as the independent variables in our regression model, as we have more proportional valves than waveform samples, it is not ideal, because the data points become sparse and the computation time high in such a high-dimensional space.
-Dimensionality reduction is therefore an important part of our work and we treat it here.
+A time series is a sequence of values which we index by a time parameter.
+While ata from panels and longitudinal studies readily fit this definition, we note that the time parameter need not represent the passing of time in the real world.
+As an example of time series data with a time parameter which does not represent the passing of time in the real world, we take digital image data, where the time parameter represents the position of a pixel in a digital image.
+The only property we require from our data to fit the time series definition is therefore that we index it by some parameter for which we define a partial order \citep{davey2002introduction}.
+In a statistical model, we treat the values in a time series as the realizations of a random variable indexed by the same time parameter as the time series itself \citep{shumway2000time}.
+
+In this thesis, the time series we encounter are sensor waveforms for proportional valve tests, an engineering application.
+Waveforms are amenable to techniques from signal processing, such as filtering or spectral decomposition, but these techniques generalize to the statistical treatment of time series.
+As an example, the Savitzky-Golay filter \citep{savitzky1964smoothing} corresponds to local polynomial regression \citep{cleveland1979robust}.
+It is also possible to combine time and frequency domain analysis from signal processing, e.g. through Fourier or wavelet transforms, to time series in general \citep{shumway2000time}.
+
+\subsection{Dimensionality reduction}
+
+While we can treat any time series data with techniques from signal processing, we see that most waveform data share additional properties, such as the 1 kHz sample rate we see in the proportional valve test waveform data in this thesis.
+It is important to be mindful of the curse of dimensionality \citep{hastie2009elements} when we apply techniques from statistics with no analog in signal processing to data with considerably more variables than observations.
+Although it is possible to directly use the 30,000 samples of each sensor waveform as the predictor variables in our regression model, as we have more proportional valves than waveform samples, it is not ideal, because the data points become sparse and the time complexity high in such a high-dimensional space.
+Dimensionality reduction, summarizing data in a high-dimensional space in a lower-dimensional space while preserving a given characteristic of said high-dimensional data as well as possible, is therefore necessary before we solve the regression problem.
+In this subsection, we give an overview of dimensionality reduction techniques.
 
 An approach to dimensionality reduction which has been known for over a century is \acrlong{pca}~(\acrshort{pca}) \citep{doi:10.1080/14786440109462720,hotelling1933analysis}.
-The aim of \acrshort{pca} is to find new uncorrelated variables, called principal components (PC), which successively maximize variance, that is: the first PC contributes most to the total variance, the second PC contributes the second most to the total variance, and so on \citep{doi:10.1098/rsta.2015.0202}.
-To find these principal components, we solve an eigendecomposition problem for a square covariance matrix or singular value decomposition (SVD) problem for a non-square covariance matrix.
-\Acrlong{pca}~(\acrshort{pca}) validity assumptions: linearity, high variance means high importance, and orthogonality of principal components. Are these valid for time series data? What about sensor data (high sample rate)?
+The aim of \acrshort{pca} is to find new uncorrelated variables, called principal components (PC), which successively maximize variance, that is: the first principal contributes most to the total variance, the second principal component contributes the second most to the total variance, and so on \citep{doi:10.1098/rsta.2015.0202}.
+To find these principal components, we solve an eigendecomposition problem for a square covariance matrix or \acrlong{svd}~\acrshort{SVD} problem for a general rectangular covariance matrix.
+\Acrlong{pca}~(\acrshort{pca}) validity assumptions: linearity, high variance means high importance, and orthogonality of principal components. Are these valid for time series data?
 PCA compression assumption: correlation between input vectors is high?
 
-Linear discriminant analysis (LDA) \citep{hastie2009elements,mardia1979multivariate} is both an approach to dimensionality reduction and a classification technique for a Gaussian mixture model.
-
-\subsection{Spectral analysis}
 
 Spectral analysis
 
-While it makes sense to apply PCA to the concatenation of multiple time series, it does not make sense to apply a spectral decomposition such as a (short time/sliding window) Fourier transform or wavelet transform to it.
+While it makes sense to apply \acrshort{pca} to the concatenation of multiple time series, it does not make sense to apply a spectral decomposition such as a (short time/sliding window) Fourier transform or wavelet transform to it.
 PCA
 \citep{DBLP:journals/pvldb/DingTSWK08}
 
-\section{Explainable machine learning}
+Even when we apply \acrshort{pca} or \acrshort{lda} and use only a few of the linear combinations these yield as variables in a statistical model,
+The predictions from a statistical model are hard to interpret when the number of dimensions is high.
 
-Dimensionality reduction through PCA or LDA is hard to interpret when the number of dimensions is high.
+Time series segmentation (sliding window, top-down, bottom-up, SWAB) \citep{DBLP:conf/icdm/KeoghCHP01}
 
-\section{Interpretability of machine learning}
+\subsection{Classification}
 
-Time series shapelets  \citep{DBLP:conf/kdd/YeK09}
+Another key problem in the statistical analysis of time series data is time series classification.
+This is simply the classification problem from machine learning \citep{hastie2009elements} applied to time series data, equivalent to the regression problem from traditional statistics using continuous predictor variables to predict a categorical outcome variable \citep{agresti2003categorical}.
+We can therefore combine the dimensionality reduction techniques for time series data from the previous subsection with techniques for solving the classification or regression problem, yielding principal components regression \citep{hastie2009elements} and matrix profile regression \citep{DBLP:journals/frai/GuidottiD21,seoni2021template}, among other combinations.
+In addition, \acrlong{lda}~(\acrshort{lda}) \citep{hastie2009elements,mardia1979multivariate} is both a technique for dimensionality reduction and a classification technique for a Gaussian mixture model.
+
+Time series shapelets \citep{DBLP:conf/kdd/YeK09} are time series primitives which are most representative of a class of time series in a time series classification problem.
+These are subsequences of
 
 Learning shapelets \citep{DBLP:conf/kdd/GrabockaSWS14}
 
@@ -128,6 +147,10 @@ Learning shapelets \citep{DBLP:conf/kdd/GrabockaSWS14}
 
 PostgreSQL \citep{postgresql}
 
+statsmodels \citep{statsmodels}
+
 Scikit-learn \citep{DBLP:journals/jmlr/PedregosaVGMTGBPWDVPCBPD11}
 
 Tslearn \citep{DBLP:journals/jmlr/TavenardFVDAHPY20}
+
+pyts \citep{DBLP:journals/jmlr/FaouziJ20}
