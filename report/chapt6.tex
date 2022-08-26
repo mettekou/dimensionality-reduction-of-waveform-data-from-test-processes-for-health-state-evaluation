@@ -1,24 +1,87 @@
-\chapter{Shapelet learning}
+\chapter{Learning shapelets from sensor waveforms}
+
+In this chapter we abandon the combination of a variable selection technique with a multiple logistic regression model in favour of an integrated approach.
+The learning shapelets technique we apply to pressure sensor waveforms here combines variable selection with classification.
+Instead of performing exhaustive search, as in the seminal work on shapelets \citep{DBLP:conf/kdd/YeK09}, learning shapelets is done by optimization of an objective function through stochastic gradient descent.
+As for the statistical models in the previous chapters, we dicuss hyperparameter tuning and measure predictive capability.
+We also address the explainability of learning shapelets, which the authors of the algorithm tout as an important benefit.
 
 \section{Preliminaries}
 
-\section{Prediction}
+As is the case for variable selection techniques, learning shapelets requires hyperparameters.
+We have to provide the size of the shapelets we want it to find, as we do not consider automated approaches such as genetic algorithms here.
+While product engineers from the automotive supplier indicate in which range of shapelet lengths to look, learning shapelets requires exact lengths.
+Neither the implementation of shapelet learning in Tslearn, nor that in pyts offers automated hyperparameter tuning, for instance by cross-validation.
+We therefore consider three configurations based on the indicated range here: 2 shapelets of 10 ms long, 2 shapelets of 50 ms long, and 2 shapelets of 100 ms long.
+We note that the length and amount of shapelets are factors in the space complexity of the algorithm.
 
-As for the approaches from the previous two chapters, we evaluate how well the shapelet learning model predicts the health state of proportional valves by measuring the area under the \acrshort{roc} curve which figure~\ref{fig:roc-shapelet-learning} depicts.
+Aside from hyperparameters specific to learning shapelets, there are also parameters which we set for each implementation.
+Both implementations allow us to set a random number generator seed for reproducibility, which we do.
+Both implementations also allow us to control the number of iterations of the stochastic gradient descent algorithm, but this is a factor in the time complexity of learning shapelets.
+The implementation in pyts requires us to set the degree of parallelism, whereas the implementation in Tslearn automatically uses all available CPU cores.
+In addition, only the implementation in Tslearn offers batching, which is the feature we most need for our sizeable data set.
+Batching is splitting the time series into batches of a fixed size and considering one of these at a time.
+This is the classic space-time tradeoff in computer science: learning shapelets on a batch at a time takes more overall time, but consumes less primary storage.
+
+Given the need for batching, we use the implementation of learning shapelets in Tslearn here.
+For shapelets of 10 ms we can afford to set a batch size of 7,500, for shapelets of 50 ms we halve this batch size, and for shapelets of 100 ms we halve it again.
+The batch sizes set in all three cases lead us to consume most of the primary storage in our workstation\thinspace: we cannot muster more primary storage.
+We find the defaults of 10,000 iterations for the stochastic gradient descent algorithm far too high.
+To keep the training time under an hour on our workstation, we set 100 iterations for shapelets of 10 ms, 10 iterations for shapelets of 50 ms, and 5 iterations for shapelets of 100 ms.
+
+\section{Explainability}
+
+Recall that an important reason for the existence of learning shapelets is the explainability of the shapelets it delivers to domain experts.
+In our case these domain experts are the product engineers from the automotive supplier company.
+Figure~\ref{fig:shapelets} depicts the shapelets we obtain using the three sets of hyperparameters from the previous section.
+While these are recognizable as pressure waveform segments thanks to the presence of dither, we do not see how the model uses them to distinguish between 35 bar proportional valve health states.
+Increasing the length of the shapelets further may make them easier to explain, but 100 ms is as far as our personal workstation will let us go in terms of primary storage.
+In addition, we conjecture that the predictive capability of the model would suffer from this change.
+We do experiment with the amount of shapelets in the next section.
 
 \begin{figure}
-  \includegraphics[width=\textwidth]{roc_shapelet_learning.png}
-  \caption{The \acrshort{roc} curve for the shapelet learning model.}
+  \begin{center}
+  \includegraphics[width=0.7\textwidth]{shapelets_2_10.png}
+  \includegraphics[width=0.7\textwidth]{shapelets_2_50.png}
+  \includegraphics[width=0.7\textwidth]{shapelets_2_100.png}
+  \end{center}
+  \caption{The shapelets we obtain from learning shapelets models with 2 10 ms, 2 50 ms, and 2 100 ms shapelets}
+  \label{fig:shapelets}
+\end{figure}
+
+\section{Prediction}
+
+As for the approaches from the previous two chapters, we evaluate how well the learning shapelets models predict the health state of 35 bar proportional valves by measuring the area under the \acrshort{roc} curves which figure~\ref{fig:roc-shapelet-learning} depicts.
+The model learning 2 50 ms shapelets predicts the proportional valve health state the best, but not as well as either logistic regression model using scalar values.
+When we change this model to learn either 1 or 4 shapelets, we obtain the \acrshort{roc} curves in figure~\ref{fig:roc-shapelet-learning-50}.
+The model predicts proportional valve health state worse in both cases.
+Given the limited amount of models we built due to the time and space complexity of the algorithm, we conclude that changing the hyperparameters just a bit has considerable impact on the predictive capability of the model.
+
+\begin{figure}
+  \begin{center}
+  \includegraphics[width=0.7\textwidth]{roc_shapelet_learning_2_10.png}
+  \includegraphics[width=0.7\textwidth]{roc_shapelet_learning_2_50.png}
+  \includegraphics[width=0.7\textwidth]{roc_shapelet_learning_2_100.png}
+  \end{center}
+  \caption{The \acrshort{roc} curves for learning shapelets models with 2 10 ms, 2 50 ms, and 2 100 ms shapelets}
   \label{fig:roc-shapelet-learning}
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+  \includegraphics[width=0.7\textwidth]{roc_shapelet_learning_1_50.png}
+  \includegraphics[width=0.7\textwidth]{roc_shapelet_learning_4_50.png}
+  \end{center}
+  \caption{The \acrshort{roc} curves for learning shapelets models with 1 50 ms shapelet and 4 50 ms shapelets}
+  \label{fig:roc-shapelet-learning-50}
 \end{figure}
 
 \section{Conclusion}
 
-Shapelet learning leads to a model which predicts proportional valve health state well, although not as well as logistic regression on manually extracted variables.
-However, it does so by only considering the pressure sensor waveform, whereas the manually extracted variables come from the current, pressure, and temperature sensor waveforms.
-
-Both the implementation of shapelet learning in pyts and the implementation in tslearn are lacking.
-Although both implementations allow the user to split data in batches, they do not allow the user to stream the data from a database or file system, thereby defeating the purpose of batching.
-Furthermore, the implementation in pyts does not allow parallel processing.
-Finally, the implementation in tslearn consumes exorbitant amounts of memory for shapelets of non-trivial length.
+Shapelet learning leads to a model which predicts proportional valve health state well, although not as well as logistic regression on scalar variables selected by domain experts.
+However, like matrix profile regression, it does so by only considering the pressure sensor waveform, whereas the manually selected variables come from the current, pressure, and temperature sensor waveforms.
+We also note that the shapelets the approach produces are not easily explainable.
+Both the implementation of learning shapelets in pyts and the implementation in tslearn are lacking.
+Only Tslearn allows the user to split data in batches, and neither allows the user to stream the data from a database or file system, thereby defeating part of the purpose of batching.
+This is especially problematic because the implementation of learning shapelets in Tslearn consumes exorbitant amounts of memory for shapelets of non-trivial length.
 We conclude that both implementations need to further mature to see use in production applications.

@@ -18,7 +18,7 @@
 
 \usepackage{microtype}
 
-\usepackage[acronym]{glossaries}
+\usepackage[acronym,toc]{glossaries}
 
 \setacronymstyle{long-short}
 \newacronym{dct}{DCT}{dual-clutch transmission}
@@ -32,8 +32,19 @@
 \newacronym{json}{JSON}{JavaScript object notation}
 \newacronym{roc}{ROC}{receiver operating characteristic}
 \newacronym{lasso}{LASSO}{least absolute shrinkage and selection operator}
+\newacronym{dft}{DFT}{discrete Fourier transform}
+\newacronym{fpga}{FPGA}{field-programmable gate array}
+\newacronym{csv}{CSV}{comma-separated values}
+\newacronym{tsv}{TSV}{tab-separated values}
+\newacronym{sql}{SQL}{Structured Query Language}
+\newacronym{acid}{ACID}{atomicity, consistency, isolation, durability}
+\newacronym{base}{BASE}{basically available, soft-state, eventually consistent}
 
 \makeglossaries%
+
+\usepackage{lscape}
+
+\usepackage{longtable}
 
 %-------------------------------------------------------------------------------
 % FILL IN YOUR DETAILS
@@ -48,9 +59,9 @@
 
 \studentnr{02113915} % Fill in your student number
 
-\promotor{Prof. Dr. Ir. Sofie Van Hoecke}
-\copromotor{Prof. Dr. Bram Vervisch}
-\tutor{Mr. David Vander Mijnsbrugge}
+\promotor{Prof. dr. ir. Sofie Van Hoecke}
+\copromotor{Prof. dr. Bram Vervisch}
+\tutor{Ir. David Vander Mijnsbrugge}
 
 \orientation{Statistical Data Analysis}
 
@@ -78,7 +89,7 @@
 \usepackage[titletoc]{appendix}
 
 % ---- ADDITIONAL SETTINGS
-\graphicspath{{Fig/}} % path to the figure directory
+%\graphicspath{{Fig/}} % path to the figure directory
 
 \DeclareMathOperator*{\Bowtie}{\bowtie}%
 
@@ -144,7 +155,7 @@
 
 \begin{appendices}
 
-    \include{app1}
+%    \include{app1}
     
 \end{appendices}
 

@@ -4,8 +4,8 @@ import seaborn as sns
 
 from load import load, load_waveform_values
 from clean import clean
-from explore import univariate, bivariate, waveform_heatmap
-from logistic_regression import logistic_regression_forward, logistic_regression_lasso
+from explore import univariate, bivariate, waveform_heatmap, cooks_d
+from logistic_regression import logistic_regression_forward, logistic_regression_lasso, logistic_regression_matrix_profile
 from learn import learning_shapelets
 #from pca import pca
 
@@ -35,6 +35,11 @@ def main():
     #plt.rcParams['font.sans-serif'] = ['UGent Panno Text']
     np.random.seed(42)
     #data = clean(load(connection_string))
+    #print(logistic_regression_forward(data).summary())
+    #print(data.iloc[[11268,12286,3437,3197]])
+    #cooks_d(logistic_regression_forward(data))
+    #univariate(data)
+    #plt.savefig("../report/cooks_d.png",dpi=300)
     #model_forward = logistic_regression_forward(data)
     #plt.savefig("../report/roc_forward.png",bbox_inches="tight",dpi=300)
     #print(model_forward.summary())
@@ -45,9 +50,16 @@ def main():
     x, y = load_waveform_values(connection_string)
     #waveform_heatmap(x)
     #plt.savefig("../report/waveform_passed_heatmap.png",bbox_inches='tight',dpi=300)
-    rows, columns = np.shape(x)
-    learning_shapelets(np.reshape(x, (rows, columns, 1)), y)
-    plt.savefig("../report/roc_shapelet_learning.png",bbox_inches='tight',dpi=300)
+    logistic_regression_matrix_profile(x, y, 200, 200)
+    plt.show()
+    #plt.savefig("../report/roc_matrix_profile_regression_200_100.png",bbox_inches="tight",dpi=300)
+    #logistic_regression_matrix_profile(x, y, 500, 100)
+    #plt.savefig("../report/roc_matrix_profile_regression_500_100.png",bbox_inches="tight",dpi=300)
+    #logistic_regression_matrix_profile(x, y, 1000, 100)
+    #plt.savefig("../report/roc_matrix_profile_regression_1000_100.png",bbox_inches="tight",dpi=300)
+    #rows, columns = np.shape(x)
+    #learning_shapelets(np.reshape(x, (rows, columns, 1)), y)
+    #plt.savefig("../report/shapelets.png",bbox_inches='tight',dpi=300)
     #pcs, pca_, labels = pca(data)
     #myplot(pcs[:,0:2],np.transpose(pca_.components_[0:2, :]), labels)
     #print(pca_.explained_variance_)

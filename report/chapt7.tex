@@ -1,3 +1,30 @@
-\chapter{Conclusion}
+\chapter{Discussion}
+
+In this final chapter, we conclude the master's dissertation by reviewing the statistical models we detail in the previous chapters and looking ahead to future work.
+We have brought data organization and statistical modelling techniques to an automotive supplier company which only stores data on file servers and performs no statistical analysis.
+While doing so, we have compared well established to state-of-the-art model building for logistic regression.
+Our focus for the state of the art was on dimensionality reduction before performing the logistic regression and an integrated approach to dimensionality reduction and classification.
+
+\section{Review}
+
+The logistic regression models using scalar variables extracted by the automotive supplier company's product engineers both predict 35 bar proportional valve health state well, although elastic net regularization yields a model with slightly higher predictive capability.
+We do note that the logistic regression model we built using stepwise regression by forward variable selection is more parsimonious.
+Logistic regression models taking the transformed output of the matrix profile algorithm on pressure sensor waveforms, such as motif and discord data points, have subpar predictive capability for 35 bar proportional valve health state.
+However, using discord data points yields better results than using motif data points.
+Finally, learning shapelets from pressure sensor waveforms has better predictive capability than models using the transformed output of the matrix profile algorithm.
+However, the space complexity of the training algorithm for the learning shapelets model is far higher than that of the training algorithms for the other models analyzing pressure sensor waveforms.
+In addition, we find the explainability of the learnt shapelets, touted by the authors of learning shapelets as a prominent benefit, is lacking.
 
 \section{Future work}
+
+For the automotive supplier company, future work is to apply the same statistical modelling techniques to other valve types and other parts entirely.
+Furthermore, it can develop the logistic regression models from this master's dissertation into multinomial regression models for predicting multiple health states.
+Since there are clear failure modes to group the failed tests by, such as the wrong valve type being tested, such models may fit the data better than logistic regression models.
+This does require the product engineers to annotate failures with a failure mode, which the automotive supplier company currently has no formal process for.
+At the cost of primary storage, it is possible to introduce additional sensor waveforms to the methods from chapters 5 and 6 of this master's dissertation, thereby building multi-dimensional time series regression models.
+
+For us, future work is to improve the subpar predictive capabilities of regression models using dimensionality reduction of sensor waveforms.
+Further investigating how to optimally transform the output from the matrix profile algorithm to provide variables to regression models is a good starting point here.
+There are also other approaches to finding shapelets than learning shapelets for us to investigate.
+In addition, there exist dimensionality reduction techniques which we have not touched upon at all and which are barely used in the literature, such as wavelet transforms.
+These are part of an entirely different space for us to explore in future work.

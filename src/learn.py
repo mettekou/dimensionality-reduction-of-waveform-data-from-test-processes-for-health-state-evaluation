@@ -22,42 +22,52 @@ def learning_shapelets(x, y):
     n_classes = len(set(y_train))
 
     # We will extract 2 shapelets and align them with the time series
-    shapelet_sizes = {10: 2}
+    shapelet_sizes = {50: 1}
 
     # Define the model and fit it using the training data
     shp_clf = LearningShapelets(n_shapelets_per_size=shapelet_sizes,
                             weight_regularizer=0.0001,
                             optimizer=Adam(lr=0.01),
-                            max_iter=100,
+                            max_iter=10,
                             verbose=0,
                             scale=False,
-                            batch_size = 7500,
+                            batch_size = 4000,
                             random_state=42)
     shp_clf.fit(x_train, y_train)
     y_pred = shp_clf.predict_proba(x_test)
     RocCurveDisplay.from_predictions(y_test, y_pred[:,1])
+    plt.savefig("../report/roc_shapelet_learning_1_50.png",bbox_inches="tight",dpi=300)
     # We will plot our distances in a 2D space
     #distances = shp_clf.transform(X_train).reshape((-1, 2))
     #weights, biases = shp_clf.get_weights('classification')
 
     # Create a grid for our two shapelets on the left and distances on the right
     #viridis = cm.get_cmap('viridis', 4)
-    #fig = plt.figure(constrained_layout=True)
-    #gs = fig.add_gridspec(3, 9)
-    #fig_ax1 = fig.add_subplot(gs[0, :2])
-    # fig_ax2 = fig.add_subplot(gs[0, 2:4])
+    fig = plt.figure(constrained_layout=True)
+    gs = fig.add_gridspec(3, 9)
+    fig_ax1 = fig.add_subplot(gs[0, :2])
+    #fig_ax2 = fig.add_subplot(gs[0, 2:4])
+    #fig_ax3 = fig.add_subplot(gs[1, :2])
+    #fig_ax4 = fig.add_subplot(gs[1, 2:4])
     # fig_ax3a = fig.add_subplot(gs[1, :2])
     # fig_ax3b = fig.add_subplot(gs[1, 2:4])
     # fig_ax3c = fig.add_subplot(gs[2, :2])
     # fig_ax3d = fig.add_subplot(gs[2, 2:4])
-    # fig_ax4 = fig.add_subplot(gs[:, 4:])
+    #fig_ax4 = fig.add_subplot(gs[:, 4:])
 
     # Plot our two shapelets on the left side
-    # fig_ax1.plot(shp_clf.shapelets_[0])
-    # fig_ax1.set_title('Shapelet $\mathbf{s}_1$')
+    fig_ax1.plot(shp_clf.shapelets_[0])
+    fig_ax1.set_title('Shapelet $\mathbf{s}_1$')
 
-    # fig_ax2.plot(shp_clf.shapelets_[1])
-    # fig_ax2.set_title('Shapelet $\mathbf{s}_2$')
+    #fig_ax2.plot(shp_clf.shapelets_[1])
+    #fig_ax2.set_title('Shapelet $\mathbf{s}_2$')
+
+    #fig_ax3.plot(shp_clf.shapelets_[2])
+    #fig_ax3.set_title('Shapelet $\mathbf{s}_3$')
+
+    #fig_ax4.plot(shp_clf.shapelets_[3])
+    #fig_ax4.set_title('Shapelet $\mathbf{s}_4$')
+
 
     # Create the time series of each class
     # for i, subfig in enumerate([fig_ax3a, fig_ax3b, fig_ax3c, fig_ax3d]):

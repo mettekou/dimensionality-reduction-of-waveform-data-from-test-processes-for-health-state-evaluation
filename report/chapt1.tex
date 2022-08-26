@@ -1,72 +1,84 @@
 \chapter{Introduction}
 
-Because we statistically analyze data in this thesis, it is opportune to first introduce the data at hand.
+An automotive supplier company develops, builds, and tests proportional valves for use in its products.
+As part of the tests of these valves, it records sensor waveforms and extracts scalar variables from these by numerical algorithms to determine the health state of the valves through limit checks on the scalar variables.
+This health state is currently binary: a valve either passes or fails a test.
+In this master's dissertation, we propose to replace the extraction of scalar variables from sensor waveforms by a statistical model which takes the sensor waveforms as inputs.
+We detail the shortcomings of the existing approach and the benefits of this approach in the problem statement section of this chapter.
+In the section on research objectives, we describe the work to be done.
+Finally, we conclude this introductory chapter with an outline of the rest of this master's dissertation.
+
+\section{Data}
+
+Because we statistically analyze data in this master's dissertation, it is opportune to first introduce the data at hand.
 It originates from an automotive supplier company which develops, produces, and tests automotive power transmission systems such as \acrlongpl{dct} (\acrshortpl{dct}) for performance vehicles.
 In addition, it does so for most components of its \acrshortpl{dct}, such as clutches and hydraulic subsystems.
-The test processes for some of the simplest components of these hydraulic subsystems, namely proportional valves, produce the data which we analyze in this thesis.
-As the company produces these proportional valves in high quantities, the decision to analyze their data makes sense from both the statistical and the engineering perspective.
-
-% Add figure of proportional valve
-Let us now turn our attention to the subject of the test process data.
-Proportional valves are electromechanical fluid pressure regulation devices common in hydraulic systems \citep{DBLP:journals/tii/MazaevCH21}.
-The proportional valves we consider here contain a solenoid, which is an electromagnet formed by a coil.
-To regulate pressure in the proportional valve, we send an electrical current through this coil and the resulting magnetic field attracts a plunger.
-The plunger movement can be linear to proportionally regulate fluid pressure or sudden to either allow maximum fluid pressure or none whatsoever.
-In this dissertation we only concern ourselves with proportional valves with a maximum pressure of 35 bar.
-This decision is not due to our methods not being generally applicable, but rather due to the data set we have available.
-
-% See Automotive Power Transmission Systems
-%Simple mechatronic devices such as solenoid valves do not stand alone, but serve as the components of more complex mechatronic devices.
-
+The test processes for some of the simplest components of these hydraulic subsystems, namely 35 bar proportional valves, produce the sensor waveforms which we analyze in this master's dissertation.
+Simple mechatronic devices such as proportional valves do not stand alone, but serve as the components of more complex mechatronic devices.
 The hydraulic systems which incorporate the proportional valves are even more diverse than the valves themselves.
 This should come as no surprise, as pressure regulation is arguably the main method of control in such systems.
 
+Let us now turn our attention to the subject of the test process data.
+Proportional valves are electromechanical fluid pressure regulation devices common in hydraulic systems \citep{DBLP:journals/tii/MazaevCH21}.
+The proportional valves we consider here contain a solenoid, which is an electromagnet formed by a coil.
+Figure~\ref{fig:proportional-valve} depicts a section of such a proportional valve \citep{zhang2018automotive}.
+To regulate pressure in the proportional valve, an electrical current is sent through this coil and the resulting magnetic field attracts a plunger.
+The plunger movement can be linear to proportionally regulate fluid pressure or sudden to either allow maximum fluid pressure or none whatsoever.
+In this dissertation we only concern ourselves with proportional valves with a maximum pressure of 35 bar.
+As the automotive supplier company produces and consumes more of these 35 bar proportional valves than of any other valve type, the decision to analyze their test process data makes sense from both the statistical and the engineering perspective.
+
+\begin{figure}
+  \includegraphics[width=\textwidth]{proportional_valve.png}
+  \caption{A section of a proportional valve controlled by a solenoid \citep{zhang2018automotive}}
+  \label{fig:proportional-valve}
+\end{figure}
+
 It is also necessary to describe the test processes for proportional valves here.
-During test processes for mechatronic devices, soft real-time systems and field-programmable gate arrays (FPGAs) sample tens of sensors mounted on a \acrlong{dut} (\acrshort{dut}) and test bench at rates exceeding 1 kHz.
-Given that these test processes last several minutes for all but the simplest of mechatronic devices, the resulting waveforms consist of hundreds of thousands of samples each.
-Because they precisely capture the \acrshort{dut}’s response to the test process, along with any edge conditions stemming from the test bench, the waveforms are stored for analysis at the end of the test process, together with categorical data, such as which components were used during the assembly of the DUT.\@
+During test processes for mechatronic devices, soft real-time systems and \acrlongpl{fpga}~(\acrshort{fpga}) sample tens of sensors mounted on a \acrlong{dut} (\acrshort{dut}) and test bench at rates exceeding 1 kHz.
+Given that these test processes last several minutes for all but the simplest of mechatronic devices, the resulting waveforms consist of hundreds of thousands of data points each.
+Because they precisely capture the \acrshort{dut}’s response to the test process, along with any edge conditions stemming from the test bench, the sensor waveforms are stored for analysis at the end of the test process, together with categorical data, such as which components were used during the assembly of the \acrshort{dut}.
 
 The goal of this analysis depends on the environment in which it takes place.
-In a development environment, the DUTs are iterative improvements over an initial product design.
-Product engineers either inspect the waveforms from these test processes visually or they write software to analyze them via numerical mathematics. They find features of the waveforms which are the result of the DUT’s behaviour deviating fromthe norm. Software engineers then adapt the product engineers’ work for use in a production environment.
-The goal here is no longer to develop an understanding of the product’s behaviour, but to detect deviations in the DUT’s behaviour immediately after the test process.
-
+In a development environment, the \acrshortpl{dut} are iterative improvements over an initial product design.
+Product engineers either inspect the sensor waveforms from the test processes visually or they write software to analyze them via numerical algorithms.
+In this manner, they derive scalar variables from the waveforms which are the result of the DUT’s behaviour deviating from the norm.
+Software engineers then adapt the product engineers’ work for use in a production environment.
+The goal here is no longer to develop an understanding of the product’s behaviour, but to detect deviations in the \acrshort{dut}’s behaviour immediately after the test process.
 
 \section{Problem statement}
 
-A problem with the current approach is the workload for software engineers.
-
-Furthermore, More errors due to manual numerical mathematics/algorithms
-
-No standard procedure
-
-It is clear that the analysis is rigid: the features of interest to product engineers during development are the ones which are evaluated in production.
-Due to the small amount of devices for which the waveforms are analyzed during development, it is also biased.
+It is clear that the analysis from the previous section is rigid\thinspace: the scalar variables of interest to product engineers during development are the ones which they also evaluate in production.
+The small sample of valves for which the sensor waveforms are analyzed during development also leads to bias.
 Some defects are rare enough to evade detection during development, but common enough to lead to considerable losses in production.
-When these defects are detected in production, product and process engineers have to revise the analysis and software engineershave to adapt their software.
-Production then has to be stopped to implement the adapted software.
+When these defects are detected in production, product and process engineers revise the analysis and software engineers adapt their software.
+While the adapted software is installed on the test bench workstations, production then has to be stopped.
+
+Another issue with the analysis lies with the extraction of scalar variables from sensor waveforms through numerical algorithms.
+These algorithms are simple, ad hoc, and tested on few sensor waveforms before being used.
+As such, small deviations in the sensor waveforms often trip them up, leading to proportional valves failing tests they should pass.
+This is another important financial loss for the automotive supplier company.
 
 \section{Research objectives}
 
-For a more flexible and unbiased analysis, we propose the use of a statistical model, both in the development
-and production environment. It can take both the high-dimensional waveform test data and the categorical
-assembly data as inputs. The student can opt for a traditional statistical model or a machine learning model.
-Either way, he can subject it to several research questions of interest to us.
+A properly built statistical model better accounts for these unforeseen circumstances.
+Even when it does not, rebuilding it using a new data set requires less effort and production downtime than adjusting numerical algorithms.
+It is also more flexible than the currently used numerical algorithms.
+For a more flexible and unbiased analysis, we therefore propose the use of a statistical model, both in the development
+and production environment.
+In this master's dissertation, we answer two research questions of interest to the automotive supplier company through this statistical model.
 
 \begin{itemize}
-      \item Compare various automatic data reduction methods for waveforms as
-            preprocessing for a regression model
-      \item Given the waveforms characterizing a development test process for a few DUTs, can a statistical
-            model find features of interest? Some input from product engineers, such as the features they deem
-            interesting, can be used as a stepping stone if necessary.
-      \item Compare regression model using data reduction on waveforms to
-            regression model using features extracted by domain experts
-      \item Given the waveforms characterizing a production test process for many DUTs, can a statistical model
-            find features of interest not yet found during development? Similarly, can it eliminate features found
-            in development no longer relevant during production?
-      \item Developing a standard procedure
+      \item Does a dimensionality reduction method for sensor waveforms as
+            preprocessing for a model lead to predictions which are more accurate than those of a model based on scalar variables extracted by product engineers?
+      \item Given the sensor waveforms characterizing a 35 bar proportional valve current sweep test, can a statistical
+            model find scalar variables of interest?
 \end{itemize}
 
 \section{Outline}
 
 The next chapter is on related work.
+In the third chapter, we explore both the variables extracted by the automotive supplier company's engineers and the sensor waveforms.
+We dedicate the fourth chapter to building a logistic regression model using the extracted scalar variables to serve as a benchmark for predictions.
+The fifth chapter contains a description of a logistic regression model which operates on motifs from the matrix profile of the pressure sensor waveforms.
+In the sixth chapter, we abandon logistic regression entirely in favour of a machine learning model for classification dubbed shapelet learning.
+The final chapter is our discussion, where we review the models and look ahead to future work.

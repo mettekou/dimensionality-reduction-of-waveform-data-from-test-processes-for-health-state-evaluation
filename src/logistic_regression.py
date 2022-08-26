@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import scale
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.metrics import (confusion_matrix, roc_curve, roc_auc_score, RocCurveDisplay)
+import matrixprofile as mp
 import matplotlib.pyplot as plt
 
 independents = [  "CS_AvgFalSlp",
@@ -71,10 +72,11 @@ def logistic_regression_forward(data: pd.DataFrame):
             available_independents.remove(best_model_bic[0])
         else:
             better_model_found = False
-    y_pred = better_model.predict(x_test[selected_independents])
-    RocCurveDisplay.from_predictions(y_test, y_pred)
+    return better_model
+    #y_pred = better_model.predict(x_test[selected_independents])
+    #RocCurveDisplay.from_predictions(y_test, y_pred)
     #plt.show()
-    return better_model#, confusion_matrix(y_test, y_pred)
+    #return better_model#, confusion_matrix(y_test, y_pred)
 
 def logistic_regression_lasso(data: pd.DataFrame):
     scaled_data = data.select_dtypes(include=["float64"]).apply(scale)
@@ -88,3 +90,37 @@ def logistic_regression_lasso(data: pd.DataFrame):
     RocCurveDisplay.from_predictions(y_test.values.ravel(), y_pred)
     #plt.show()
     return coefficients
+
+def logistic_regression_matrix_profile(x: np.ndarray, y: np.ndarray, window_size, k):
+    #_, columns = np.shape(x)
+    #failed_x = x[np.where(np.logical_not(y))]
+    #passed_x = x[np.where(y)]
+    #failed_x_1d = failed_x.flatten()
+    #passed_x_1d = passed_x.flatten()
+    #profile_failed = mp.compute(failed_x_1d, query = passed_x_1d, n_jobs = -1)
+    #profile_passed = mp.compute(passed_x_1d, windows = 30000, n_jobs = -1)
+    #mp.visualize(profile_failed)
+    #plt.show()
+    #print(mp.discover.motifs(profile_passed, exclusion_zone = 0))
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, random_state=0)
+    #motifs = {}
+    discords = {}
+    for row in range(np.shape(x_train)[0]):
+        profile = mp.compute(x_train[row], windows = window_size, n_jobs = -1)
+    #    for motif in mp.discover.motifs(profile, k = 1)["motifs"]:
+    #        indices = motif["motifs"]
+    #        for i in range(indices[0], indices[1] + 1):
+    #            motifs[i] = motifs.setdefault(i, 0) + 1
+        for discord in mp.discover.discords(profile, k = window_size)["discords"]:
+            discords[discord] = discords.setdefault(discord, 0) + 1
+    top_discords = sorted(discords.items(), key=lambda x:x[1])[0:(k - 1)]
+    print(top_discords)
+    top_indices = []
+    for index, _ in top_discords:
+        top_indices.append(index)
+    model = LogisticRegressionCV(max_iter=10000,penalty="elasticnet",l1_ratios=[0.5,0.5],solver="saga",n_jobs=-1)
+    model.fit(x_train[:,top_indices], y_train)
+    y_pred = model.decision_function(x_test[:,top_indices])
+    RocCurveDisplay.from_predictions(y_test, y_pred)
+    #plt.show()
+    #print(motifs)

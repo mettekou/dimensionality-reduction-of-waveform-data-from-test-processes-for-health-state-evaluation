@@ -17,9 +17,14 @@ Because we require this feature in our work, its underperformance is an argument
 Since we are unable to find studies on the performance of NTFS and SMB/CIFS to confirm or deny this claim, we only draw from anecdotal evidence against the use of the file server.
 
 There are also arguments to be made against the file formats in which the valve test data is stored.
-A variation on the standard \acrlong{json}~(\acrshort{json})~\citep{DBLP:journals/rfc/rfc8259} is the file format for test report files, which contain metadata for the valve such as its type, the scalars extracted from the sensor waveforms by the evaluation software, and the valve's health state.
-It is a text-based file format, as listing~\ref{lst:test-report} depicts.
-The test report files link to their respective sensor waveform files by including their absolute path.
+A variation on the standard \acrlong{json}~(\acrshort{json})~\citep{DBLP:journals/rfc/rfc8259} is the text-based file format for test report files, which contain metadata for the valve such as its type, the scalars extracted from the sensor waveforms by the evaluation software, and the valve's health state.
+It is a variation on \acrshort{json} because it allows constants such as negative infinity, infinity, and not-a-number to be encoded as numbers, rather than character strings.
+The test report files therefore require adjustments before being fed to a standard \acrshort{json} parser.
+The custom schema for these test report files defines a header object for valve test metadata and an array of test objects which each contain an array of value objects.
+Listing~\ref{lst:test-report} depicts a test object.
+Each test object also links to the sensor waveform file which contains its respective sensor waveform files by including that sensor waveform file's absolute path.
+These absolute paths originate from the test bench workstation, which means they are not valid on the file server.
+Fortunately, the directory hierarchy is identical up to a few levels, so we automatically convert these absolute paths from the test bench workstation to absolute paths on the file server during data ingestion.
 
 The proprietary TDMS from National Instruments \citep{nitdms} is the binary file format for the sensor waveform files themselves.
 A TDMS file consists of segments which each optionally contain data and metadata.
@@ -37,27 +42,149 @@ We therefore cannot search the contents of TDMS files through an operating syste
   \label{lst:test-report}
 \end{listing}
 
-To overcome these limitations, we set up a PostgreSQL 14 server on our own workstation.
-PostgreSQL is the only free and open-source \acrshort{rdbms} with a parametric array column type, transparent compression of large columns, and dynamic analysis of query plans and query resource consumption (\texttt{EXPLAIN ANALYZE}).
-Since the valve data is structured and we do not require a distributed system, we do not consider a non-relational database, such as the wide column store Apache Cassandra an option.
+To overcome the limitations we detail in the previous paragraphs, we set up a PostgreSQL server on our personal openSUSE Tumbleweed workstation.
+Table~\ref{tbl:hardware} lists the hardware and software specifications of our workstation, of which fast secondary storage is the most important to our endeavour.
+The Btrfs file system \citep{DBLP:journals/tos/RodehBM13} is the default for openSUSE Tumbleweed and not the optimal choice for relational database workloads in general and PostgreSQL workloads in particular\thinspace: its copy-on-write feature makes it difficult for the \acrshort{rdbms} to anticipate writes, thereby degrading performance.
+However, since Btrfs also handles logical volume management (RAID 0) for us, it is impractical to replace it by another logical volume manager to for instance use an ext4 file system.
+We are aware that it is possible to disable copy-on-write on a per-file or per-directory basis, but we do not attempt this.
+
+\begin{table}
+  \centering
+\begin{tabular}{ll}
+Central processing unit (CPU) cores & 16 \\
+CPU clock speed & 3.4 to 4.9 GHz \\
+Primary storage               & 4 $\times$ 32 GB DDR4-3200 RAM \\
+Secondary storage             & 2 $\times$ 2 TB NVMe SSD \\
+Volume management and file system & Btrfs RAID 0 \\
+Operating system (OS) & openSUSE Tumbleweed \\
+OS kernel version & Linux 5.19.1 \\
+PostgreSQL version & 14.5
+\end{tabular}
+  \caption{The hardware and software specifications of our own workstation}
+  \label{tbl:hardware}
+\end{table}
+
+We do not consider a non-relational DBMS, such as the wide column store Apache Cassandra \citep{DBLP:journals/sigops/LakshmanM10} an option for a few reasons.
+While wide column stores are the non-relational DBMS most similar to \acrshortpl{rdbms}, as they use tables, rows, and columns, they do not implement the relational model or \acrshort{sql} in general.
+The query languages they do offer lack some basic features we need for our work, such as joins between tables.
+Furthermore, transactions in non-relational DBMS do not satisfy the desirable \acrlong{acid}~(\acrshort{acid}) properties \citep{DBLP:journals/csur/HarderR83}.
+Instead, they satisfy the less stringent \acrlong{base}~(\acrshort{base}) properties \citep{DBLP:journals/queue/Pritchett08}.
+For scientific work, we require the guarantees the \acrshort{acid} properties give us, particularly consistency.
+We therefore design a relational database for the PostgreSQL \acrshort{rdbms}.
+
+In the interest of saving space, we omit the conceptual and logical schemas for our relational database here.
+We also only discuss tables in the physical schema directly relevant to our work, although these have foreign keys referring to tables which we do not discuss here.
+Nevertheless, because we use natural keys over surrogate keys as primary and foreign keys, the astute reader may infer the rest of the physical schema anyway.
+We express the relevant tables in the physical schema as \acrshort{sql} data definition language (DDL) statements in the PostgreSQL dialect, which we find more readable than an entity-relationship diagram augmented with custom syntax.
+These \acrshort{sql} DDL statements include table names, column names and data types, primary and foreign keys, and indices.
+In other words, they are ready to execute in a PostgreSQL session.
+
+Let us now turn to the two most important tables for our work.
+Listing~\ref{lst:quantity-value} contains the \acrshort{sql} DDL statement for the table holding the scalar values.
+We store these as IEEE-754 double-precision floating point values.
+The other columns form a composite natural primary key which identifies the 35 bar proportional valve and test the scalar value belongs to.
+Since there is only one, we make the unique index PostgreSQL automatically creates for the primary key cover the table by means of the \texttt{INCLUDE} keyword.
+This enables PostgreSQL to only read the index, rather than the index and the table, when we retrieve scalar values.
+
+\begin{listing}
+  \inputminted[firstline=198,lastline=252,breaklines=true]{postgresql}{schema.sql}
+  \caption{The table holding scalar values}
+  \label{lst:quantity-value}
+\end{listing}
+
+Listing~\ref{lst:waveform-value} contains the \acrshort{sql} DDL statement for the table holding sensor waveforms.
+We store these as variable size arrays of IEEE-754 double-precision floating point values, which allows PostgreSQL to compress them.
+Through the use of \texttt{GENERATED ALWAYS AS}, we instruct PostgreSQL to derive the value for the sensor waveform length from the array of samples we give it.
+It is useful to store the length of each sensor waveform to be able to pad them for statistical models which require all input time series to be of equal length.
+By automating this task through delegation to PostreSQL, we avoid inconsistencies.
+
+\begin{listing}
+  \inputminted[firstline=254,lastline=310,breaklines=true]{postgresql}{schema.sql}
+  \caption{The table holding sensor waveforms}
+  \label{lst:waveform-value}
+\end{listing}
 
 \section{Data cleaning}
 
 We consider the data ingestion process we detail in the previous section separate from the data cleaning process we detail in this section.
+Since the data ingestion process already parses raw data in test report and sensor waveform files and structures it in a relational database, the data cleaning process only deals with missing values in our case.
+The automotive supplier company software which extracts scalar values from sensor waveforms represents these as not-a-number, a convention which we carried over to our relational database during data ingestion.
+We find 1,087 test reports for 35 bar proportional valves which contain at least one not-a-number value.
+These indicate a critical software fault, either in the numerical algorithms which extract the scalar values themselves, or due to missing sensor waveform files or other tangential circumstances.
+This means the proportional valves they pertain to fail the tests by default and are of little interest to us.
+In order not to confuse our models by extrapolating the not-a-number values, we discard the test reports with at least one not-a-number value.
+Since we have a total of 551,539 test reports, they do not form a sizeable chunk of our data set anyway.
 
-\section{Data exploration}
+\section{Sampling}
 
-Data exploration allows us to assess the feasibility of our endeavour.
+So far, we have considered the population of test reports, refraining from sampling before ingesting or cleaning the data.
+Indeed, one reason for the data ingestion process was to make random access to the data, such as for sampling, performant.
+Because the models in the next chapters require large chunks of the data, if not all data, to be in primary storage at a time, using the entire population's test reports for statistical inference is problematic.
+Naturally, the sensor waveforms of around 30,000 data points per test are the culprit here, and not so much the scalar values.
+It is therefore necessary to operate on a sample of the population.
 
-\subsection{Variables}
+Since failed tests constitute rare events, stratifying the sample on proportional valve health state is not a good idea.
+For such a stratified sample, a model which marks every test as passed would be deemed serviceable, due to the tiny fraction of failed tests included.
+We instead propose to use all failed tests and a random sample of passed tests of the same size, because there is less spread in the data for passed tests, as we see in the next section.
+There are 20,942 failed tests in the population, to which we add a random sample of 20,942 passed tests, setting a seed in PostgreSQL for reproducibility and copying the sample to a separate table.
+
+\section{Data visualization}
+
+In this section, we explore the sample of tests we construct in the previous section through visualization.
+Naturally, scalar values and sensor waveforms require a different approach to visualization to ensure we gain maximum insight.
+We therefore dedicate a separate subsection to the visualization of each of them.
+
+\subsection{Scalar values}
+
+We treat the scalar values as realizations of random variables for use in a logistic regression model in the next chapter, where we also check the assumptions of said model.
+The data exploration of them here is therefore less formal.
+We opt for overlapping histograms per health states for each scalar variable which we see in figure~\ref{fig:scalar-histograms}.
+We see that the distribution per health state is not always significantly different.
+The separation for \texttt{CS\_MaxAPrsRip} is the clearest, whereas there is practically no separation for pressure points along the current curve such as \texttt{CS\_RisPrs\_300}, \texttt{CS\_RisPrs\_400}, and so on.
+However, near the peak of the current curve, \texttt{CS\_RisPrs\_1200}, \texttt{CS\_RisPrs\_1300}, and \texttt{CS\_RisPrs\_1400} show clearer separation in distribution for both health states.
+An extreme outlier of around -2095 for \texttt{CS\_RisSlpDev} distorts the histogram for said scalar variable.
+
+\begin{landscape}
+\begin{figure}
+  \includegraphics[width=\linewidth]{scalar_histograms.png}
+  \caption{Histograms of scalar values per proportional valve health state}
+  \label{fig:scalar-histograms}
+\end{figure}
+\end{landscape}
 
 \subsection{Sensor waveforms}
+
+Before we turn to exploring the sensor waveform data, a short treatment of the test these originate from is at hand.
+The test is aptly named a current sweep: the current through the coil in the 35 bar proportional valve is linearly increased from 0 A to 1.5 A and then linearly decreased in a similar manner over a time period of 30 seconds.
+As it is a 35 bar proportional valve, we expect the pressure to show the same linear behaviour between 0 and 35 bar in response to the current for the valve to pass the current sweep test.
+Although the automotive supplier company stores many sensor waveforms, such as current and temperature, it shows most interest in the pressure sensor waveform.
+As a consequence and in the interest of conserving primary storage, we only use this sensor waveform as the input to the models in chapters 5 and 6 of this master's dissertation.
+
+A heatmap or two-dimensional histogram proves to be a valuable visualization of oversampled waveform data.
+To construct such a heatmap, we divide the plane in rectangular bins of equal area and count the number of waveforms that occupy each bin with at least one sample.
+Since the count data spans multiple orders of magnitude, we take the logarithm of it to make sure particularly rare shapes of sensor waveforms still show in the heatmap.
+For our pressure sensor waveform data, we find a heatmap per health state in figure~\ref{fig:waveform-heatmaps}, the top heatmap containing pressure sensor waveforms of passed current sweep tests and the bottom heatmap containing those of failed current sweep tests.
+Given the description of the current sweep test in the previous paragraph, the shape in the heatmap representing pressure sensor waveforms for passed current sweep tests should be immediately familiar.
 
 \begin{figure}
   \includegraphics[width=\textwidth]{waveform_passed_heatmap.png}
   \includegraphics[width=\textwidth]{waveform_failed_heatmap.png}
-  \caption{Pressure curves for sample okay and not okay solenoids}
+  \caption{Heatmap of pressure sensor waveforms per proportional valve health state, passed on the top and failed on the bottom}
   \label{fig:waveform-heatmaps}
 \end{figure}
 
-Figure~\ref{fig:waveform-heatmaps}
+To correctly interpret it, the heatmap of the pressure sensor waveforms for failed current sweep tests requires knowledge of the proportional valve and other valves.
+Firstly, we see pressure sensor waveforms which do not have the correct triangular shape in response to sweeping current.
+Instead, they let through the full 35 bar of pressure over the entire current sweep test.
+These are normally low on-off valves, which the automotive supplier company also produces, which were accidentally tested as 35 bar proportional valves.
+There are also pressure sensor waveforms which do have the correct triangular shape in response to sweeping current, but slope too low.
+Some of these are 6 bar proportional valves, which the automotive supplier company also produces, accidentally tested as 35 bar proportional valves.
+Of the actual 35 bar proportional valves failing the current sweep test, some exhibit pressure ripple and some have waveforms similar to 35 bar proportional valves passing the current sweep test.
+
+\section{Conclusion}
+
+In the real world, data is rarely organized as a small collection of \acrshort{csv} or \acrshort{tsv} files.
+It is instead scattered over a large pile of files, not all of them following standard file formats.
+In this chapter we first addressed this issue for the automotive supplier company's 35 proportional bar valve data by ingesting it from \acrshort{json} and TDMS files in a relational database, which permits search and random access.
+We then discarded test data with at least one missing value and took a considerable sample for further exploration.
+Finally, we visualized this sample in preparation for the formal statistical analysis in the next chapters.

@@ -1,3 +1,64 @@
-\chapter{Matrix profile regression}
+\chapter{Motif and discord logistic regression on sensor waveforms}
+
+Scalar variable selection from sensor waveforms by the automotive supplier's product engineers takes considerable time.
+Not just from these product engineers, but also from software engineers who translate the informal description from the product engineers into the numerical algorithms which extract the scalar variables.
+In this chapter and the next, we attempt to automate this task.
+
+\section{Preliminaries}
+
+We take an approach to transforming the output of the matrix profile algorithm for a regression model which we do not find in the literature yet.
+We extract the top motif from every pressure sensor waveform and count the occurrences of every index the extracted motifs span.
+Informally, we allow every pressure sensor waveform to vote on the indices which its top motif spans.
+We then select the data points at the indices with the highest occurrence counts for use as variables in an elastic net logistic regression model, to address the risk of multicollinearity in time series data.
+The first hyperparameter we set is the window size for the matrix profile algorithm.
+The second hyperparameter in our approach is the amount of indices we use to select variables for the elastic net logistic regression model.
+Since this is our own approach, we do not implement cross-validation for it to keep the work manageable and explore some combinations of hyperparameters manually instead.
+
+\section{Prediction}
+
+As in the previous chapter, we evaluate the predictive capability of the motif logistic regression model using \acrshort{roc} curves.
+Figure~\ref{fig:roc-matrix-profile} depicts the \acrshort{roc} curves when varying the amount of indices hyperparameter.
+The area under the \acrshort{roc} curve barely changes between 100, 200, or 500 indices.
+Figure~\ref{fig:roc-matrix-profile-window} paints a similar picture across window sizes of 200, 500, and 1,000 data points.
+Since the predictive capability of motif logistic regression is disappointing, let us briefly turn to discord logistic regression instead.
+In figure~\ref{fig:roc-matrix-profile-discord}, we see that it slightly outperforms motif logistic regression for the same amount of data points.
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=0.7\textwidth]{roc_matrix_profile_regression_100_100.png}
+    \includegraphics[width=0.7\textwidth]{roc_matrix_profile_regression_100_200.png}
+    \includegraphics[width=0.7\textwidth]{roc_matrix_profile_regression_100_500.png}
+  \end{center}
+  \caption{The \acrshort{roc} curves for motif logistic regression models using 100, 200, and 500 indices}
+  \label{fig:roc-matrix-profile}
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+  \includegraphics[width=0.7\textwidth]{roc_matrix_profile_regression_200_100.png}
+  \includegraphics[width=0.7\textwidth]{roc_matrix_profile_regression_500_100.png}
+  \includegraphics[width=0.7\textwidth]{roc_matrix_profile_regression_1000_100.png}
+  \end{center}
+  \caption{The \acrshort{roc} curves for motif logistic regression models using window sizes of 200, 500, and 1,000}
+  \label{fig:roc-matrix-profile-window}
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+  \includegraphics[width=0.8\textwidth]{roc_discord_regression_100_10.png}
+  \includegraphics[width=0.8\textwidth]{roc_discord_regression_200_200.png}
+  \end{center}
+  \caption{The \acrshort{roc} curves for discord logistic regression models using 100 and 200 discords}
+  \label{fig:roc-matrix-profile-discord}
+\end{figure}
 
 \section{Conclusion}
+
+Motif logistic regression on pressure sensor waveforms does not predict 35 bar proportional valve health state well.
+Its time complexity is also higher than that of learning shapelets, which we examine in the next chapter, although its space complexity is lower.
+Tuning hyperparameters such as the amount of indices from the motifs or the window size for the matrix profile algorithm does not improve the predictive capability of the model.
+That being said, there is no canonical way of transforming the output of the matrix profile algorithm to use it as the input to a regression model \citep{DBLP:journals/frai/GuidottiD21,seoni2021template}.
+While we initially opted for finding motif data points present in most pressure sensor waveforms, we also briefly looked at doing the same for discord data points.
+When we use 100 or 200 discord data points, discord logistic regression on pressure waveforms has slightly higher predictive capability than motif logistic regression on the same two amounts of motif data points.
+Although computationally more intensive, instead of considering individual pressure waveforms, we can concatenate them and find motifs and discords in the result.
+This is not a path we walk here, but is worth walking in future work.

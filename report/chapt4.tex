@@ -1,30 +1,70 @@
-\chapter{Logistic regression}
+\chapter{Multiple logistic regression on scalar variables}
 
-In this chapter we build and evaluate two logistic regression models using the variables selected by the automotive supplier company's engineers.
-We build the first model by forward selection of variables and the second by shrinking and elminating coefficients from the full model through elastic net regulariation.
-The model which best predicts proportional valve health state serves as the benchmark to which we compare the models from subsequent chapters.
+In this chapter we build and evaluate two multiple logistic regression models using the scalar variables selected by the automotive supplier company's product engineers.
+We build the first model by forward selection of variables and the second by shrinking and eliminating coefficients from the full model through elastic net regularization.
+We justify our use of both model building techniques and check the logistic regression assumptions where necessary.
+The model which best predicts proportional valve health state serves as the benchmark to which we compare the models from the two following chapters.
 
 \section{Preliminaries}
 
-e randomly partition the valve data sample in the same training set containing 80 percent of the data and test set containing the remaining 20 percent.
-Since the sample contains data for over 30,000, the
+Since we aim to evaluate the predictive capability of the models in this chapter and the two following chapters, we require a training set to build them on and a test set to evaluate their predictions on.
+Naturally, we hold these training and test sets constant across these chapters for a fair comparison.
+Since we find no consensus in the literature on how much of the sample data to incorporate into a training and test set and we have a large sample of 41,884 35 bar proportional valve current sweep tests, we randomly partition the valve data sample in the same training set containing 80 percent of the data and test set containing the remaining 20 percent.
+We are now ready to build our first two logistic regression models on the training set.
 
-\section{Forward selection of variables}
+\section{Forward variable selection stepwise regression}
 
-Because the amount of possible logistic regression models in $n$ candidate variables is $2^n$, an exhaustive search procedure is prohibitively expensive.
+\begin{listing}
+  \inputminted[firstline=45,lastline=74,breaklines=true]{python}{../src/logistic_regression.py}
+  \caption{Stepwise regression through forward variable selection}
+  \label{lst:stepwise}
+\end{listing}
+
+Because the amount of possible logistic regression models in $n$ candidate variables is $2^n$, an exhaustive search procedure is prohibitively expensive for our 30 candidate variables.
 There are search procedures which are not exhaustive, but still yield serviceable models in practice.
-Forward selection of variables is a greedy model building algorithm.
-As such, the decision to include each variable is optimal at the step it is taken.
-It starts from the empty model
+One of these is stepwise regression by forward selection of variables, a greedy \citep{DBLP:books/daglib/0023376} model building algorithm.
+It starts from the empty model and chooses a variable to add in every iteration.
+Its choice is based on a heuristic evaluated for each candidate model, which is the model from the previous iteration with one of the remaining candidate variables included.
+This does not yield the globally optimal model, since the model building problem lacks optimal substructure: the optimal model including $n$ variables is not necessarily a subset of the optimal model including $(n + 1)$ variables for any natural number $n$.
+Our implementation of stepwise regression by forward selection of variables in Python is in listing~\ref{lst:stepwise}.
 
-Forward selection of variables is not without its criticism \citep{doi:10.1080/00401706.1970.10488701,doi:10.1080/00031305.1990.10475722}, which we address here.
+Stepwise regression by forward selection of variables is not without its criticism \citep{altman1989bootstrap,doi:10.1080/00401706.1970.10488701,doi:10.1080/00031305.1990.10475722,https://doi.org/10.1111/j.2044-8317.1992.tb00992.x,tibshirani1996regression,copas1983regression}, some of it we address here.
+Firstly, the coefficients of a model built using this algorithm are only correct if they are calculated on a separate validation set.
+Secondly, the coefficients of a model built using this algorithm may be too large.
+While both of these are valid criticisms, if we do not wish to interpret the coefficients of our model, these do not apply.
+Thirdly, due to the concerns regarding repeated hypothesis testing, we do not use the p-value for a variable to decide whether to add it to the model.
+We decide to maximize the \acrlong{aic} (\acrshort{aic}) \citep{Akaike1998} as the heuristic instead, which has the added benefit of allowing us to compare models which are not nested.
+Finally, we address the concern on collinearity in the subsection on multicollinearity.
+There is also a positive note: models built through stepwise regression by forward variable selection may predict outcome variables almost as well as full models \citep{roecker1991prediction}.
+%We do not take into account $R^{2}$, since it
 
-We take into account both the \acrlong{aic} (\acrshort{aic}) \citep{Akaike1998} and the \acrlong{vif} (\acrshort{vif}) during forward selection.
-We do not take into account $R^{2}$, since it
+\subsection{Influential values}
 
-\subsection{Outliers and influential values}
+While the multiple logistic regression model does not assume a distribution of the predictor variables, it is helpful to look at the observations with high leverage to find undue influence excerted on the model.
+Additionally, we look at observations with high deviance residuals to identify where the model is a poor fit for the data.
+To this extent we construct an influence plot of leverage (Cook's distance) versus the deviance residuals for each observed current sweep test, as seen in figure~\ref{fig:cooks-d}.
+We find four observations worth studying, two of which have high leverage and two of which have large negative deviance residuals.
+The two observations with high leverage barely fail the current sweep test on \texttt{CS\_RisPrs\_1400} and \texttt{CS\_MaxAPrsRip}, but are otherwise unremarkable.
+We do not discard these observations, as they are not the result of measurement or recording error.
+As shown by their large negative deviance residuals, the two remaining observations are confidently marked by the model as passing the current sweep test, although the data shows they barely failed it for \texttt{CS\_MaxAPrsRip} alone.
+We do not discard these observations, as they are again not the result of measurement or recording error.
+
+\begin{figure}
+  \includegraphics[width=\textwidth]{cooks_d.png}
+  \caption{An influence plot showing the leverage of values versus their deviance residuals wrongly labelled as Studentized residuals due to a bug in the statsmodels library}
+  \label{fig:cooks-d}
+\end{figure}
 
 \subsection{Multicollinearity}
+
+The one assumption we do make when we build a multiple logistic regression model is that of abscence of multicollinearity.
+In linear algebra terms, the design matrix must be of full rank, that is, its columns must be linearly independent.
+In statistical terms, no predictor variable should be perfectly correlated with a linear combination of other predictor variables.
+We see the effect of multicollinearity on the interval estimates for the regression coefficients: due to redundancy in the data, there are multiple possible solutions to the regression equations with different coefficients and randomness may cause more than one of them to be chosen under repeated sampling.
+While this has little influence on the predictive capability of the model, we consider it good form to verify this assumption anyway.
+The correlation matrix in figure~\ref{fig:correlation-matrix} tells us that there are predictor variables which are highly positively correlated with multiple other predictor variables.
+While this does not confirm multicollinearity, we decide to take into account the \acrlong{vif} (\acrshort{vif}) during stepwise regression with forward variable selection.
+We do not add predictor variables with a \acrshort{vif} greater than 5 to the model.
 
 \begin{figure}
   \includegraphics[width=\textwidth]{correlation_matrix.png}
@@ -34,35 +74,46 @@ We do not take into account $R^{2}$, since it
 
 \subsection{Prediction}
 
+We evaluate the predictive capability of all statistical models in this master's dissertation using the area under the \acrlong{roc}~(\acrshort{roc}) curve, since they all predict binary outcome variables.
+Figure~\ref{fig:roc-forward} depicts the \acrshort{roc} curve for the multiple logistic regression model built using stepwise regression by forward variable selection.
+Perfect prediction corresponds to an area under the curve of 1, which means all true positives are detected without detecting any false positives, while a fair coin toss corresponds to an area under the curve of 0.5.
+We see that the multiple logistic regression model built using stepwise regression by forward variable selection predicts 35 bar proportional valve health state well, with an area under the curve equal to 0.96.
+The question now becomes: can we do even better using the scalar variables selected by the automotive supplier company's product engineers?
+
 \begin{figure}
   \includegraphics[width=\textwidth]{roc_forward.png}
-  \caption{The \acrshort{roc} curve for the stepwise logistic regression model with forward selection.}
+  \caption{The \acrshort{roc} curve for the multiple logistic regression model built using stepwise regression by forward variable selection}
   \label{fig:roc-forward}
 \end{figure}
 
-\section{Elastic net regularization}
+\section{Elastic net regularized regression}
 
-We need not resort to manual variable selection if we do not required closed form solutions to regression equations to simplify statistical inference.
-The evidence for multicollinearity between some variables leads us to prefer an elastic net regularization over a \acrlong{lasso}~(\acrshort{lasso}) regularization to automate variable sleection.
-
-Training time considerably higher than forward selection.
-
-\subsection{Penalties}
-
-We choose the hyperparameter $\lambda$/$\alpha$ for the elastic net regularization by 5-fold cross-validation on the training set.
-L1 and L2 norm penalty split 50/50.
+We need not resort to stepwise regression if we do not required closed form solutions to regression equations to simplify statistical inference.
+Regularized regression allows us to shrink coefficients or eliminate variables from the full model automatically.
+The evidence for multicollinearity between some variables leads us to prefer an elastic net regularization over a \acrshort{lasso} regularization to automate variable selection.
+As we note in the chapter on related work, elastic net regularization requires two hyperparameters to be set.
+We tune the hyperparameter $\lambda$ for the elastic net regularization by 5-fold cross-validation on the training set and set the $L_{1}$ and $L_{2}$ split to 0.5.
 
 \subsection{Prediction}
 
+Figure~\ref{fig:roc-elastic} depicts the \acrshort{roc} curve for the elastic net regularized multiple logistic regression model.
+The area under the curve is slightly higher than that for the stepwise multiple logistic regression model built by forward variable selection at 0.98.
+While this may seem like a small difference, we need to keep track of the context in which we perform our research.
+The automotive supplier company currently produces hundreds of thousands of 35 bar proportional valves per year and claims it will increase its efficiency in the future.
+If it wants to approach a true positive rate of 1, the difference in false positives between both models can be considerable due to the sheer volume of valves it produces.
+For this reason, we conclude it is worth it to use this model over the previous model.
+
 \begin{figure}
   \includegraphics[width=\textwidth]{roc_lasso.png}
-  \caption{The \acrshort{roc} curve for the logistic regression model with variable selection through elastic net regularization.}
-  \label{fig:roc-forward}
+  \caption{The \acrshort{roc} curve for the elastic net regularized multiple logistic regression model.}
+  \label{fig:roc-elastic}
 \end{figure}
 
 \section{Conclusion}
 
-Both models predict proportional valve health state well.
-However, is the complexity of additional variables in elastic net justified for AUC = 0.98 vs. AUC = 0.96 for a parsimonious hand-built model using forward selection?
-Given mass production of proportional valves, it is?
-Take into account training time.
+Both multiple logistic regression models we built in this chapter predict 35 bar proportional valve health state well.
+However, we wonder if the complexity of additional variables in elastic net regularized regression justified to increase an an area under the \acrshort{roc} curve from 0.96 to 0.98.
+Given the amount of 35 bar proportional valves the automotive supplier company produces, we argue that it is.
+We do note that the training time is considerably higher for the elastic net regularized regression model than for the model built using stepwise regression by forward variable selection.
+Nevertheless, the benchmark for predictive capability is now set to an area under the \acrshort{roc} curve of 0.98.
+In the next two chapters, we attempt to reach the same predictive capability using pressure sensor waveforms alone.
